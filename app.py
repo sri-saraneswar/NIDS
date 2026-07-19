@@ -1,4 +1,7 @@
-
+"""
+Main entry point for the NIDS project.
+Starts the Packet Capture Module.
+"""
 
 from capture.capture import start_capture
 
