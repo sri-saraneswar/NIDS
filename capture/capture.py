@@ -1,62 +1,103 @@
-# Import Scapy modules required for packet capturing and protocol analysis
-from scapy.all import sniff, IP, TCP, UDP, ICMP
+"""
+====================================================
+Network Intrusion Detection System (NIDS)
+Module : Packet Capture
+Author : Team
+Description:
+Captures live packets using Scapy and extracts
+basic packet information.
+====================================================
+"""
 
-# Function to process each captured packet
+# Import required libraries
+from scapy.all import sniff, IP, TCP, UDP, ICMP
+from datetime import datetime
+
+
+# Function to process every captured packet
 def process_packet(packet):
 
-    # Check if the packet contains an IP layer
+    # Check whether the packet contains an IP layer
     if IP in packet:
 
-        # Get the source IP address
-        src_ip = packet[IP].src
+        # -------------------------------
+        # Basic Packet Information
+        # -------------------------------
 
-        # Get the destination IP address
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        src_ip = packet[IP].src
         dst_ip = packet[IP].dst
 
-        # Get the protocol number (TCP/UDP/ICMP)
-        protocol = packet[IP].proto
-
-        # Calculate the total packet size in bytes
         packet_size = len(packet)
 
-        # Print a separator for readability
-        print("=" * 40)
+        # Convert protocol number into protocol name
+        protocol_map = {
+            1: "ICMP",
+            6: "TCP",
+            17: "UDP"
+        }
 
-        # Display the source IP address
-        print("Source IP      :", src_ip)
+        protocol = protocol_map.get(packet[IP].proto, "OTHER")
 
-        # Display the destination IP address
-        print("Destination IP :", dst_ip)
+        # Default values
+        src_port = "-"
+        dst_port = "-"
 
-        # Display the protocol number
-        print("Protocol       :", protocol)
-
-        # Display the packet size
-        print("Packet Size    :", packet_size, "bytes")
-
-        # Check if the packet is TCP
+        # -------------------------------
+        # TCP Packet
+        # -------------------------------
         if TCP in packet:
+            src_port = packet[TCP].sport
+            dst_port = packet[TCP].dport
 
-            # Display the TCP destination port
-            print("TCP Port :", packet[TCP].dport)
-
-        # Check if the packet is UDP
+        # -------------------------------
+        # UDP Packet
+        # -------------------------------
         elif UDP in packet:
+            src_port = packet[UDP].sport
+            dst_port = packet[UDP].dport
 
-            # Display the UDP destination port
-            print("UDP Port :", packet[UDP].dport)
-
-        # Check if the packet is ICMP
+        # -------------------------------
+        # ICMP Packet
+        # -------------------------------
         elif ICMP in packet:
+            src_port = "-"
+            dst_port = "-"
 
-            # Display that it is an ICMP packet
-            print("ICMP Packet")
+        # -------------------------------
+        # Display Packet Information
+        # -------------------------------
 
-# Function to start packet capturing
+        print("=" * 60)
+
+        print(f"Time             : {timestamp}")
+        print(f"Source IP        : {src_ip}")
+        print(f"Destination IP   : {dst_ip}")
+        print(f"Protocol         : {protocol}")
+        print(f"Source Port      : {src_port}")
+        print(f"Destination Port : {dst_port}")
+        print(f"Packet Size      : {packet_size} Bytes")
+
+        print("=" * 60)
+
+
+# Function to start packet capture
 def start_capture():
 
-    # Display a startup message
-    print("Starting IDS Packet Capture...")
+    print("\n==============================================")
+    print("      Network Intrusion Detection System")
+    print("          Packet Capture Started")
+    print(" Press CTRL + C to Stop Capturing Packets")
+    print("==============================================\n")
 
-    # Capture packets continuously and process each packet
-    sniff(prn=process_packet, store=False)
+    sniff(
+        iface="vboxnet0",      # Host-Only Interface
+        prn=process_packet,    # Function to process each packet
+        store=False            # Don't store packets in memory
+    )
+
+
+# Main Function
+if __name__ == "__main__":
+    start_capture()
