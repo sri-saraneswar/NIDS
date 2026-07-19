@@ -1,62 +1,71 @@
-# Import Scapy modules required for packet capturing and protocol analysis
-from scapy.all import sniff, IP, TCP, UDP, ICMP
 
-# Function to process each captured packet
+
+from scapy.all import sniff
+from scapy.layers.inet import IP, TCP, UDP
+
+
 def process_packet(packet):
+    """
+    Process each captured packet and display its details.
+    """
 
-    # Check if the packet contains an IP layer
+    # Check if packet contains an IP layer
     if IP in packet:
 
-        # Get the source IP address
+        # Extract IP information
         src_ip = packet[IP].src
-
-        # Get the destination IP address
         dst_ip = packet[IP].dst
-
-        # Get the protocol number (TCP/UDP/ICMP)
         protocol = packet[IP].proto
-
-        # Calculate the total packet size in bytes
         packet_size = len(packet)
 
-        # Print a separator for readability
-        print("=" * 40)
+        # Convert protocol numbers into names
+        protocol_map = {
+            1: "ICMP",
+            6: "TCP",
+            17: "UDP"
+        }
 
-        # Display the source IP address
-        print("Source IP      :", src_ip)
+        protocol_name = protocol_map.get(protocol, str(protocol))
 
-        # Display the destination IP address
-        print("Destination IP :", dst_ip)
+        # Default port values
+        src_port = "-"
+        dst_port = "-"
 
-        # Display the protocol number
-        print("Protocol       :", protocol)
-
-        # Display the packet size
-        print("Packet Size    :", packet_size, "bytes")
-
-        # Check if the packet is TCP
+        # Extract TCP ports
         if TCP in packet:
+            src_port = packet[TCP].sport
+            dst_port = packet[TCP].dport
 
-            # Display the TCP destination port
-            print("TCP Port :", packet[TCP].dport)
-
-        # Check if the packet is UDP
+        # Extract UDP ports
         elif UDP in packet:
+            src_port = packet[UDP].sport
+            dst_port = packet[UDP].dport
 
-            # Display the UDP destination port
-            print("UDP Port :", packet[UDP].dport)
+        # Display packet information
+        print("\n" + "=" * 60)
+        print("Packet Captured")
+        print("=" * 60)
+        print(f"Source IP        : {src_ip}")
+        print(f"Destination IP   : {dst_ip}")
+        print(f"Protocol         : {protocol_name}")
+        print(f"Source Port      : {src_port}")
+        print(f"Destination Port : {dst_port}")
+        print(f"Packet Size      : {packet_size} bytes")
+        print("=" * 60)
 
-        # Check if the packet is ICMP
-        elif ICMP in packet:
 
-            # Display that it is an ICMP packet
-            print("ICMP Packet")
-
-# Function to start packet capturing
 def start_capture():
+    """
+    Start live packet capture.
+    """
 
-    # Display a startup message
-    print("Starting IDS Packet Capture...")
+    print("=" * 60)
+    print("      NETWORK IDS - PHASE 2 : PACKET CAPTURE")
+    print("=" * 60)
+    print("Capturing live network packets...")
+    print("Press CTRL + C to stop.\n")
 
-    # Capture packets continuously and process each packet
-    sniff(prn=process_packet, store=False)
+    sniff(
+        prn=process_packet,
+        store=False
+    )
