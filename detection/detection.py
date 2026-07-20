@@ -2,65 +2,82 @@
 ====================================================
 Network Intrusion Detection System (NIDS)
 Module : Detection Engine
+
 Description:
-Applies rule-based detection on captured packets.
+Coordinates the intrusion detection process by
+applying IDS rules, updating network statistics,
+and returning the detection result.
 ====================================================
 """
 
+from detection.rules import detect_rules
+
+from detection.statistics import (
+    update_statistics,
+    should_print_summary
+)
+
+
+# ==================================================
+# Detection Engine
+# ==================================================
 
 def detect(packet_info):
+    """
+    Applies IDS rules to a captured packet,
+    updates network statistics, and returns
+    the detection result.
 
-    status = "NORMAL"
-    reason = "No suspicious activity detected"
+    Parameters
+    ----------
+    packet_info : dict
+        Packet information received from the
+        Capture Module.
 
-    protocol = packet_info["protocol"]
-    dst_port = packet_info["dst_port"]
-    packet_size = packet_info["packet_size"]
+    Returns
+    -------
+    dict
+        Detection result containing:
+        - status
+        - severity
+        - rule_id
+        - attack
+        - reason
+    """
 
-    # -------------------------------
-    # Rule 1 : ICMP Detection
-    # -------------------------------
-    if protocol == "ICMP":
-        status = "ALERT"
-        reason = "ICMP Packet Detected"
+    # ----------------------------------------------
+    # Apply Detection Rules
+    # ----------------------------------------------
 
-    # -------------------------------
-    # Rule 2 : Telnet
-    # -------------------------------
-    elif dst_port == 23:
-        status = "ALERT"
-        reason = "Telnet Connection Detected"
+    result = detect_rules(packet_info)
 
-    # -------------------------------
-    # Rule 3 : FTP
-    # -------------------------------
-    elif dst_port in [20, 21]:
-        status = "ALERT"
-        reason = "FTP Connection Detected"
+    # ----------------------------------------------
+    # Update Statistics
+    # ----------------------------------------------
 
-    # -------------------------------
-    # Rule 4 : SSH
-    # -------------------------------
-    elif dst_port == 22:
-        reason = "SSH Traffic"
+    update_statistics(packet_info, result)
 
-    # -------------------------------
-    # Rule 5 : HTTP
-    # -------------------------------
-    elif dst_port == 80:
-        reason = "HTTP Traffic"
+    # ----------------------------------------------
+    # Return Detection Result
+    # ----------------------------------------------
 
-    # -------------------------------
-    # Rule 6 : HTTPS
-    # -------------------------------
-    elif dst_port == 443:
-        reason = "HTTPS Traffic"
+    return result
 
-    # -------------------------------
-    # Rule 7 : Large Packet
-    # -------------------------------
-    if packet_size > 1500:
-        status = "ALERT"
-        reason = "Large Packet Detected"
 
-    return status, reason
+# ==================================================
+# Security Summary Trigger
+# ==================================================
+
+def summary_required():
+    """
+    Determines whether the security summary
+    should be displayed.
+
+    Returns
+    -------
+    bool
+        True if the configured summary interval
+        has been reached.
+    """
+
+    return should_print_summary()
