@@ -2,88 +2,92 @@
 ====================================================
 Network Intrusion Detection System (NIDS)
 Module : Packet Capture
-Author : Team
 Description:
-Captures live packets using Scapy and extracts
-basic packet information.
+Captures packets and forwards packet
+information to the Analyzer Module.
 ====================================================
 """
 
-# Import required libraries
 from scapy.all import sniff, IP, TCP, UDP, ICMP, get_if_list
 from datetime import datetime
 
+from analyzer.analyzer import analyze_packet
 
-# Function to process every captured packet
+
 def process_packet(packet):
 
-    # Check whether the packet contains an IP layer
-    if IP in packet:
+    if IP not in packet:
+        return
 
-        # Current timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = datetime.now()
 
-        # Extract IP information
-        src_ip = packet[IP].src
-        dst_ip = packet[IP].dst
-        packet_size = len(packet)
+    src_ip = packet[IP].src
+    dst_ip = packet[IP].dst
 
-        print("\n" + "=" * 60)
-        print(f"Time           : {timestamp}")
-        print(f"Source IP      : {src_ip}")
-        print(f"Destination IP : {dst_ip}")
-        print(f"Packet Size    : {packet_size} Bytes")
+    packet_size = len(packet)
 
-        # Check protocol
-        if TCP in packet:
-            print("Protocol       : TCP")
-            print(f"Source Port    : {packet[TCP].sport}")
-            print(f"Destination Port: {packet[TCP].dport}")
+    protocol = "OTHER"
+    src_port = None
+    dst_port = None
 
-        elif UDP in packet:
-            print("Protocol       : UDP")
-            print(f"Source Port    : {packet[UDP].sport}")
-            print(f"Destination Port: {packet[UDP].dport}")
+    if TCP in packet:
+        protocol = "TCP"
+        src_port = packet[TCP].sport
+        dst_port = packet[TCP].dport
 
-        elif ICMP in packet:
-            print("Protocol       : ICMP")
+    elif UDP in packet:
+        protocol = "UDP"
+        src_port = packet[UDP].sport
+        dst_port = packet[UDP].dport
 
-        else:
-            print("Protocol       : Other")
+    elif ICMP in packet:
+        protocol = "ICMP"
 
-        print("=" * 60)
+    packet_info = {
+
+        "timestamp": timestamp,
+
+        "src_ip": src_ip,
+
+        "dst_ip": dst_ip,
+
+        "protocol": protocol,
+
+        "src_port": src_port,
+
+        "dst_port": dst_port,
+
+        "packet_size": packet_size
+
+    }
+
+    print("\n--------------------------------------------")
+    print(packet_info)
+    print("--------------------------------------------")
+
+    analyze_packet(packet_info)
 
 
-# ---------------------- Main Program ----------------------
-
-print("\nAvailable Network Interfaces:\n")
+print("\nAvailable Interfaces\n")
 
 interfaces = get_if_list()
 
-for index, iface in enumerate(interfaces):
-    print(f"{index + 1}. {iface}")
+for i, iface in enumerate(interfaces):
 
-try:
-    choice = int(input("\nEnter the interface number: "))
+    print(f"{i+1}. {iface}")
 
-    if choice < 1 or choice > len(interfaces):
-        print("Invalid interface number.")
-        exit()
+choice = int(input("\nSelect Interface : "))
 
-    selected_interface = interfaces[choice - 1]
+selected_interface = interfaces[choice-1]
 
-    print("\nStarting Packet Capture...")
-    print(f"Listening on interface: {selected_interface}")
-    print("Press Ctrl + C to stop.\n")
+print(f"\nListening on {selected_interface}...\n")
 
-    sniff(
-        iface=selected_interface,
-        prn=process_packet,
-        store=False
-    )
+sniff(
 
-except KeyboardInterrupt:
-    print("\nPacket capture stopped.")
+    iface=selected_interface,
 
-except ValueError:
-    print("Please enter a valid number.")
+    prn=process_packet,
+
+    store=False
+
+)
