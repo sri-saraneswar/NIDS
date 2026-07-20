@@ -1,13 +1,21 @@
 """
-Analyzer Module
-Receives packet information from the capture module.
-Add detection rules here in the next phase.
+====================================================
+Network Intrusion Detection System (NIDS)
+Module : Packet Analyzer
+Description:
+Receives packet information from the Capture Module,
+invokes the Detection Engine, and displays analysis.
+====================================================
 """
+
+from detection.detection import detect
 
 
 def analyze_packet(packet_info):
-    """
-    Analyze packet information.
-    This is a placeholder for detection logic.
-    """
-    pass
+
+    status, reason = detect(packet_info)
+
+    print("\n========== Packet Analysis ==========")
+    print(f"Status : {status}")
+    print(f"Reason : {reason}")
+    print("=====================================")

@@ -2,49 +2,47 @@
 ====================================================
 Network Intrusion Detection System (NIDS)
 Module      : Packet Capture
-Description : Captures packets from the selected
-              network interface and forwards
-              packet information to the Analyzer.
+Description :
+Captures network packets, extracts important
+information, and forwards it to the Analyzer Module.
 ====================================================
 """
 
-from datetime import datetime
 from scapy.all import sniff, IP, TCP, UDP, ICMP, get_if_list
+from datetime import datetime
 
 from analyzer.analyzer import analyze_packet
 
-# Packet counter for display
+# Packet counter
 packet_count = 0
 
 
 def process_packet(packet):
     """
-    Process each captured packet and extract
-    useful information for the analyzer.
+    Extracts required information from each captured packet
+    and forwards it to the analyzer.
     """
 
     global packet_count
 
-    # Ignore packets without IP layer
+    # Ignore non-IP packets
     if IP not in packet:
         return
 
     packet_count += 1
 
-    # Timestamp
     timestamp = datetime.now()
 
-    # Basic IP information
     src_ip = packet[IP].src
     dst_ip = packet[IP].dst
+
     packet_size = len(packet)
 
-    # Default values
     protocol = "OTHER"
     src_port = None
     dst_port = None
 
-    # Detect protocol and ports
+    # Determine protocol and ports
     if TCP in packet:
         protocol = "TCP"
         src_port = packet[TCP].sport
@@ -58,8 +56,9 @@ def process_packet(packet):
     elif ICMP in packet:
         protocol = "ICMP"
 
-    # Store packet information
+    # Store packet details
     packet_info = {
+        "packet_number": packet_count,
         "timestamp": timestamp,
         "src_ip": src_ip,
         "dst_ip": dst_ip,
@@ -69,10 +68,10 @@ def process_packet(packet):
         "packet_size": packet_size
     }
 
-    # Display packet in readable format
-    print("\n" + "=" * 55)
-    print(f"PACKET #{packet_count}")
-    print("=" * 55)
+    # Display packet information
+    print("\n==================================================")
+    print(f"              PACKET #{packet_count}")
+    print("==================================================")
     print(f"Time        : {timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Source IP   : {src_ip}")
     print(f"Destination : {dst_ip}")
@@ -85,50 +84,46 @@ def process_packet(packet):
         print(f"Dest Port   : {dst_port}")
 
     print(f"Packet Size : {packet_size} bytes")
-    print("=" * 55)
+    print("==================================================")
 
-    # Send packet information to analyzer
+    # Send packet information to Analyzer Module
     analyze_packet(packet_info)
 
 
 def start_capture():
     """
-    Display available interfaces, allow user selection,
-    and start packet capture.
+    Displays available interfaces and starts packet capture.
     """
 
-    print("\n" + "=" * 55)
-    print("   NETWORK INTRUSION DETECTION SYSTEM (NIDS)")
-    print("             Packet Capture Module")
-    print("=" * 55)
+    print("\n==================================================")
+    print("     NETWORK INTRUSION DETECTION SYSTEM")
+    print("           Packet Capture Module")
+    print("==================================================")
 
-    # Get available interfaces
     interfaces = get_if_list()
 
-    print("\nAvailable Interfaces:\n")
+    print("\nAvailable Network Interfaces\n")
 
-    for i, iface in enumerate(interfaces, start=1):
-        print(f"{i}. {iface}")
+    for index, interface in enumerate(interfaces, start=1):
+        print(f"{index}. {interface}")
 
-    # User selects interface
+    # Get valid interface selection
     while True:
         try:
             choice = int(input("\nSelect Interface Number : "))
 
             if 1 <= choice <= len(interfaces):
                 break
-            else:
-                print("Invalid selection. Please choose a valid number.")
+
+            print("Invalid selection. Please try again.")
 
         except ValueError:
-            print("Please enter a numeric value.")
+            print("Please enter a valid number.")
 
     selected_interface = interfaces[choice - 1]
 
-    print("\n" + "=" * 55)
-    print(f"Listening on interface: {selected_interface}")
-    print("Press CTRL + C to stop capturing packets")
-    print("=" * 55)
+    print(f"\nListening on interface: {selected_interface}")
+    print("Press CTRL + C to stop capturing.\n")
 
     try:
         sniff(
@@ -138,6 +133,4 @@ def start_capture():
         )
 
     except KeyboardInterrupt:
-        print("\n\nPacket capture stopped by user.")
-        print(f"Total packets captured: {packet_count}")
-        print("Exiting NIDS Packet Capture Module.")
+        print("\n\nPacket capture stopped successfully.")
