@@ -5,44 +5,43 @@ Module : Packet Analyzer
 
 Description:
 Receives packet information from the Capture Module,
-passes it to the Detection Engine, and displays
-detailed packet analysis.
+passes it to the Detection Engine, stores the result
+in the database and displays packet analysis.
 ====================================================
 """
 
 from detection.detection import detect, summary_required
 from detection.statistics import security_summary
+from database.database import insert_packet
 
-# ==================================================
 # Packet Counter
-# ==================================================
-
 packet_id = 0
 
 
-# ==================================================
-# Analyze Packet
-# ==================================================
-
 def analyze_packet(packet_info):
     """
-    Analyzes a captured packet by sending it to the
-    Detection Engine and displaying the result.
+    Analyze one captured packet.
     """
 
     global packet_id
 
     packet_id += 1
 
-    # --------------------------------------------------
+    # --------------------------------------------
     # Run Detection Engine
-    # --------------------------------------------------
+    # --------------------------------------------
 
     result = detect(packet_info)
 
-    # --------------------------------------------------
-    # Display Packet Analysis
-    # --------------------------------------------------
+    # --------------------------------------------
+    # Store Packet in Database
+    # --------------------------------------------
+
+    insert_packet(packet_info, result)
+
+    # --------------------------------------------
+    # Display Packet Information
+    # --------------------------------------------
 
     print("\n")
     print("=" * 65)
@@ -73,9 +72,10 @@ def analyze_packet(packet_info):
 
     print("=" * 65)
 
-    # --------------------------------------------------
+    # --------------------------------------------
     # Print Security Summary
-    # --------------------------------------------------
+    # --------------------------------------------
 
     if summary_required():
+
         security_summary()

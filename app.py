@@ -3,35 +3,37 @@
 Network Intrusion Detection System (NIDS)
 Main Application
 ====================================================
-
-Description:
-Entry point of the Network Intrusion Detection System.
-Initializes the application and starts live packet capture.
 """
 
 from capture.capture import start_capture
+from database.database import create_database
 
-
-# ==================================================
-# Main Function
-# ==================================================
 
 def main():
     """
-    Starts the Network Intrusion Detection System.
+    Main entry point of the Network IDS.
     """
 
     print("\n")
     print("=" * 60)
-    print("        NETWORK INTRUSION DETECTION SYSTEM")
+    print("     NETWORK INTRUSION DETECTION SYSTEM")
     print("=" * 60)
+
+    # ---------------------------------------------
+    # Initialize Database
+    # ---------------------------------------------
+
+    create_database()
+
+    print("Database Initialized Successfully.")
+
+    # ---------------------------------------------
+    # Start Packet Capture
+    # ---------------------------------------------
 
     start_capture()
 
 
-# ==================================================
-# Program Entry Point
-# ==================================================
-
 if __name__ == "__main__":
+
     main()
