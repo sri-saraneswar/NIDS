@@ -1,71 +1,177 @@
+"""
+====================================================
+Network Intrusion Detection System (NIDS)
+Module : Packet Capture
+
+Description:
+Captures live network packets from the selected
+network interface, extracts important information,
+and forwards it to the Analyzer Module.
+====================================================
+"""
+
+from datetime import datetime
+
+from scapy.all import (
+    sniff,
+    IP,
+    TCP,
+    UDP,
+    ICMP,
+    get_if_list
+)
+
+from analyzer.analyzer import analyze_packet
+from config import STORE_PACKETS
 
 
-from scapy.all import sniff
-from scapy.layers.inet import IP, TCP, UDP
+# ==================================================
+# Display Available Network Interfaces
+# ==================================================
 
+def display_interfaces():
+    """
+    Displays all available network interfaces.
+    """
+
+    interfaces = get_if_list()
+
+    print("\nAvailable Network Interfaces\n")
+
+    for index, interface in enumerate(interfaces, start=1):
+        print(f"{index}. {interface}")
+
+    return interfaces
+
+
+# ==================================================
+# Select Network Interface
+# ==================================================
+
+def select_interface():
+    """
+    Allows the user to select a network interface.
+    """
+
+    interfaces = display_interfaces()
+
+    while True:
+
+        try:
+            choice = int(input("\nSelect Interface : "))
+
+            if 1 <= choice <= len(interfaces):
+                return interfaces[choice - 1]
+
+            print("Invalid selection. Please try again.")
+
+        except ValueError:
+            print("Please enter a valid number.")
+
+
+# ==================================================
+# Process Captured Packet
+# ==================================================
 
 def process_packet(packet):
     """
-    Process each captured packet and display its details.
+    Extracts useful information from each captured packet
+    and sends it to the Analyzer Module.
     """
 
-    # Check if packet contains an IP layer
-    if IP in packet:
+    # Ignore non-IP packets
+    if IP not in packet:
+        return
 
-        # Extract IP information
-        src_ip = packet[IP].src
-        dst_ip = packet[IP].dst
-        protocol = packet[IP].proto
-        packet_size = len(packet)
+    timestamp = datetime.now()
 
-        # Convert protocol numbers into names
-        protocol_map = {
-            1: "ICMP",
-            6: "TCP",
-            17: "UDP"
-        }
+    src_ip = packet[IP].src
+    dst_ip = packet[IP].dst
 
-        protocol_name = protocol_map.get(protocol, str(protocol))
+    protocol = "OTHER"
 
-        # Default port values
-        src_port = "-"
-        dst_port = "-"
+    src_port = None
+    dst_port = None
 
-        # Extract TCP ports
-        if TCP in packet:
-            src_port = packet[TCP].sport
-            dst_port = packet[TCP].dport
+    # TCP Packet
+    if TCP in packet:
 
-        # Extract UDP ports
-        elif UDP in packet:
-            src_port = packet[UDP].sport
-            dst_port = packet[UDP].dport
+        protocol = "TCP"
 
-        # Display packet information
-        print("\n" + "=" * 60)
-        print("Packet Captured")
-        print("=" * 60)
-        print(f"Source IP        : {src_ip}")
-        print(f"Destination IP   : {dst_ip}")
-        print(f"Protocol         : {protocol_name}")
-        print(f"Source Port      : {src_port}")
-        print(f"Destination Port : {dst_port}")
-        print(f"Packet Size      : {packet_size} bytes")
-        print("=" * 60)
+        src_port = packet[TCP].sport
+        dst_port = packet[TCP].dport
 
+    # UDP Packet
+    elif UDP in packet:
+
+        protocol = "UDP"
+
+        src_port = packet[UDP].sport
+        dst_port = packet[UDP].dport
+
+    # ICMP Packet
+    elif ICMP in packet:
+
+        protocol = "ICMP"
+
+    packet_info = {
+
+        "timestamp": timestamp,
+
+        "src_ip": src_ip,
+
+        "dst_ip": dst_ip,
+
+        "protocol": protocol,
+
+        "src_port": src_port,
+
+        "dst_port": dst_port,
+
+        "packet_size": len(packet)
+
+    }
+
+    # Send packet to analyzer
+    analyze_packet(packet_info)
+
+
+# ==================================================
+# Start Packet Capture
+# ==================================================
 
 def start_capture():
     """
-    Start live packet capture.
+    Starts live packet capture using Scapy.
     """
 
-    print("=" * 60)
-    print("      NETWORK IDS - PHASE 2 : PACKET CAPTURE")
-    print("=" * 60)
-    print("Capturing live network packets...")
-    print("Press CTRL + C to stop.\n")
+    interface = select_interface()
 
-    sniff(
-        prn=process_packet,
-        store=False
-    )
+    print("\n")
+    print("=" * 60)
+    print("Starting Network IDS")
+    print(f"Listening Interface : {interface}")
+    print("Press CTRL + C to stop")
+    print("=" * 60)
+
+    try:
+
+        sniff(
+            iface=interface,
+            prn=process_packet,
+            store=STORE_PACKETS
+        )
+
+    except KeyboardInterrupt:
+
+        print("\n")
+        print("=" * 60)
+        print("Stopping Packet Capture...")
+        print("Thank you for using the NIDS.")
+        print("=" * 60)
+
+    except Exception as error:
+
+        print("\nAn error occurred while capturing packets.")
+        print(f"Error: {error}")
+        
