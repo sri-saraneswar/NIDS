@@ -10,19 +10,12 @@ Starts:
 - Packet Capture
 
 ====================================================
-
-Description:
-Entry point of the Network Intrusion Detection System.
-Initializes the application and starts live packet capture.
 """
 
 
 from capture.capture import start_capture
-<<<<<<< HEAD
-=======
 
 from database.database import create_database
->>>>>>> e73906848d73f55ab94d301e6455a8cf66336400
 
 from session.session_manager import (
     start_session,
@@ -87,23 +80,7 @@ def print_session_summary(summary):
 
 
 
-# ==================================================
-# Main Function
-# ==================================================
-
 def main():
-<<<<<<< HEAD
-    """
-    Starts the Network Intrusion Detection System.
-    """
-
-    print("\n")
-    print("=" * 60)
-    print("        NETWORK INTRUSION DETECTION SYSTEM")
-    print("=" * 60)
-
-    start_capture()
-=======
 
     print("\n")
 
@@ -170,12 +147,8 @@ def main():
         print_session_summary(summary)
 
 
->>>>>>> e73906848d73f55ab94d301e6455a8cf66336400
 
-
-# ==================================================
-# Program Entry Point
-# ==================================================
 
 if __name__ == "__main__":
+
     main()
