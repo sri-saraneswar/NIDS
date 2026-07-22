@@ -368,5 +368,8 @@ def detect_rules(packet_info):
         }
 
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> e73906848d73f55ab94d301e6455a8cf66336400
     return result

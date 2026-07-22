@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Virtual environment
 venv/
 .venv/
@@ -16,3 +17,5 @@ __pycache__/
 
 # Logs
 *.log
+=======
+>>>>>>> 3b70507f1d604b26f213b761da4aacbe94859078
