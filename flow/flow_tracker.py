@@ -162,7 +162,7 @@ def get_completed_flow_count():
 
 def get_active_flows():
 
-    return flow_stats.active_flowsS
+    return flow_stats.active_flows
 
 
 def get_completed_flows():

@@ -2,217 +2,379 @@
 ====================================================
 Network Intrusion Detection System (NIDS)
 Module : Database Manager
-
 Description:
-Handles SQLite database creation, packet storage,
-alert retrieval and log management.
+Creates and manages the SQLite database.
 ====================================================
 """
 
 import sqlite3
 
-# ==================================================
-# Database Configuration
-# ==================================================
-
-DATABASE_NAME = "database/nids.db"
+from config import DATABASE_NAME
 
 
 # ==================================================
-# Create Database and Table
+# Database Connection
+# ==================================================
+
+def get_connection():
+
+    return sqlite3.connect(DATABASE_NAME)
+
+
+# ==================================================
+# Create Database
 # ==================================================
 
 def create_database():
-    """
-    Creates the SQLite database and packets table
-    if they do not already exist.
-    """
 
-    connection = sqlite3.connect(DATABASE_NAME)
+    conn = get_connection()
 
-    cursor = connection.cursor()
+    cursor = conn.cursor()
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS packets (
+    # ---------------- Sessions ----------------
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cursor.execute("""
 
-            timestamp TEXT,
+    CREATE TABLE IF NOT EXISTS sessions(
 
-            src_ip TEXT,
+        session_id TEXT PRIMARY KEY,
 
-            dst_ip TEXT,
+        start_time TEXT,
 
-            protocol TEXT,
+        end_time TEXT,
 
-            src_port INTEGER,
+        duration REAL,
 
-            dst_port INTEGER,
+        packets INTEGER,
 
-            packet_size INTEGER,
+        flows INTEGER,
 
-            status TEXT,
+        active_flows INTEGER,
 
-            severity TEXT,
+        completed_flows INTEGER,
 
-            rule_id TEXT,
+        alerts INTEGER,
 
-            attack TEXT,
+        risk TEXT,
 
-            reason TEXT
+        status TEXT
 
-        )
-        """
     )
 
-    connection.commit()
+    """)
 
-    connection.close()
+    # ---------------- Flows ----------------
 
+    cursor.execute("""
 
-# ==================================================
-# Insert Packet
-# ==================================================
+    CREATE TABLE IF NOT EXISTS flows(
 
-def insert_packet(packet_info, result):
-    """
-    Stores one analyzed packet into the database.
-    """
+        flow_id TEXT PRIMARY KEY,
 
-    connection = sqlite3.connect(DATABASE_NAME)
+        session_id TEXT,
 
-    cursor = connection.cursor()
+        src_ip TEXT,
 
-    cursor.execute(
-        """
-        INSERT INTO packets
-        (
-            timestamp,
-            src_ip,
-            dst_ip,
-            protocol,
-            src_port,
-            dst_port,
-            packet_size,
-            status,
-            severity,
-            rule_id,
-            attack,
-            reason
-        )
+        dst_ip TEXT,
 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
+        src_port INTEGER,
 
-            str(packet_info["timestamp"]),
+        dst_port INTEGER,
 
-            packet_info["src_ip"],
+        protocol TEXT,
 
-            packet_info["dst_ip"],
+        packets INTEGER,
 
-            packet_info["protocol"],
+        bytes INTEGER,
 
-            packet_info["src_port"],
+        duration REAL,
 
-            packet_info["dst_port"],
+        status TEXT
 
-            packet_info["packet_size"],
-
-            result["status"],
-
-            result["severity"],
-
-            result["rule_id"],
-
-            result["attack"],
-
-            result["reason"]
-
-        )
     )
 
-    connection.commit()
+    """)
 
-    connection.close()
+    # ---------------- Alerts ----------------
 
+    cursor.execute("""
 
-# ==================================================
-# Get All Packets
-# ==================================================
+    CREATE TABLE IF NOT EXISTS alerts(
 
-def get_packets():
-    """
-    Returns all packets stored in the database.
-    """
+        alert_id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    connection = sqlite3.connect(DATABASE_NAME)
+        session_id TEXT,
 
-    cursor = connection.cursor()
+        flow_id TEXT,
 
-    cursor.execute(
-        """
-        SELECT * FROM packets
-        ORDER BY id DESC
-        """
+        timestamp TEXT,
+
+        severity TEXT,
+
+        attack TEXT,
+
+        source_ip TEXT,
+
+        destination_ip TEXT,
+
+        description TEXT
+
     )
 
-    packets = cursor.fetchall()
+    """)
 
-    connection.close()
+    # ---------------- Packets ----------------
 
-    return packets
+    cursor.execute("""
 
+    CREATE TABLE IF NOT EXISTS packets(
 
-# ==================================================
-# Get Only Alerts
-# ==================================================
+        packet_id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-def get_alerts():
-    """
-    Returns only ALERT packets.
-    """
+        session_id TEXT,
 
-    connection = sqlite3.connect(DATABASE_NAME)
+        flow_id TEXT,
 
-    cursor = connection.cursor()
+        timestamp TEXT,
 
-    cursor.execute(
-        """
-        SELECT *
-        FROM packets
-        WHERE status='ALERT'
-        ORDER BY id DESC
-        """
+        source_ip TEXT,
+
+        destination_ip TEXT,
+
+        source_port INTEGER,
+
+        destination_port INTEGER,
+
+        protocol TEXT,
+
+        packet_size INTEGER,
+
+        information TEXT
+
     )
 
-    alerts = cursor.fetchall()
+    """)
 
-    connection.close()
+    conn.commit()
 
-    return alerts
+    conn.close()
+
+    print("Database Initialized Successfully.")
 
 
 # ==================================================
-# Clear Database
+# Save Session
 # ==================================================
 
-def clear_database():
-    """
-    Deletes all packet records.
-    """
+def save_session(summary):
 
-    connection = sqlite3.connect(DATABASE_NAME)
+    conn = get_connection()
 
-    cursor = connection.cursor()
+    cursor = conn.cursor()
 
-    cursor.execute(
-        """
-        DELETE FROM packets
-        """
+    cursor.execute("""
+
+    INSERT OR REPLACE INTO sessions
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+
+    """, (
+
+        summary["session_id"],
+
+        str(summary["start_time"]),
+
+        str(summary["end_time"]),
+
+        summary["duration"],
+
+        summary["packets"],
+
+        summary["flows"],
+
+        summary["active_flows"],
+
+        summary["completed_flows"],
+
+        summary["alerts"],
+
+        summary["risk"],
+
+        summary["status"]
+
+    ))
+
+    conn.commit()
+
+    conn.close()
+
+
+# ==================================================
+# Save Packet
+# ==================================================
+
+def save_packet(packet_info, session_id):
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+
+    INSERT INTO packets(
+
+        session_id,
+
+        flow_id,
+
+        timestamp,
+
+        source_ip,
+
+        destination_ip,
+
+        source_port,
+
+        destination_port,
+
+        protocol,
+
+        packet_size,
+
+        information
+
     )
 
-    connection.commit()
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
-    connection.close()
+    """, (
+
+        session_id,
+
+        packet_info.get("flow_id"),
+
+        str(packet_info["timestamp"]),
+
+        packet_info["src_ip"],
+
+        packet_info["dst_ip"],
+
+        packet_info["src_port"],
+
+        packet_info["dst_port"],
+
+        packet_info["protocol"],
+
+        packet_info["packet_size"],
+
+        ""
+
+    ))
+
+    conn.commit()
+
+    conn.close()
+
+
+# ==================================================
+# Save Flow
+# ==================================================
+
+def save_flow(flow, session_id):
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+
+    INSERT OR REPLACE INTO flows
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+
+    """, (
+
+        flow.flow_id,
+
+        session_id,
+
+        flow.src_ip,
+
+        flow.dst_ip,
+
+        flow.src_port,
+
+        flow.dst_port,
+
+        flow.protocol,
+
+        flow.packet_count,
+
+        flow.bytes,
+
+        flow.duration,
+
+        flow.status
+
+    ))
+
+    conn.commit()
+
+    conn.close()
+
+
+# ==================================================
+# Save Alert
+# ==================================================
+
+def save_alert(packet_info, result, session_id):
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+
+    INSERT INTO alerts(
+
+        session_id,
+
+        flow_id,
+
+        timestamp,
+
+        severity,
+
+        attack,
+
+        source_ip,
+
+        destination_ip,
+
+        description
+
+    )
+
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+
+    """, (
+
+        session_id,
+
+        packet_info.get("flow_id"),
+
+        str(packet_info["timestamp"]),
+
+        result["severity"],
+
+        result["attack"],
+
+        packet_info["src_ip"],
+
+        packet_info["dst_ip"],
+
+        result["reason"]
+
+    ))
+
+    conn.commit()
+
+    conn.close()
