@@ -304,4 +304,4 @@ def detect_rules(packet_info):
     # Default Result
     # ==================================================
 
-    return result
+    return resultS

@@ -2,80 +2,64 @@
 ====================================================
 Network Intrusion Detection System (NIDS)
 Module : Packet Analyzer
-
 Description:
-Receives packet information from the Capture Module,
-passes it to the Detection Engine, stores the result
-in the database and displays packet analysis.
+Coordinates flow tracking, detection,
+statistics and console output.
 ====================================================
 """
 
-from detection.detection import detect, summary_required
-from detection.statistics import security_summary
-from database.database import insert_packet
+from flow.flow_tracker import update_flow
 
-# Packet Counter
+from detection.detection import detect
+
+from console.console_manager import (
+    display_live_status,
+    display_alert
+)
+
 packet_id = 0
 
 
 def analyze_packet(packet_info):
-    """
-    Analyze one captured packet.
-    """
 
     global packet_id
 
     packet_id += 1
 
-    # --------------------------------------------
-    # Run Detection Engine
-    # --------------------------------------------
+    # ------------------------------------
+    # Update Flow
+    # ------------------------------------
+
+    flow = update_flow(packet_info)
+
+    # Temporary Debug Output
+    print("\n========== FLOW ==========")
+    print(f"Flow ID     : {flow.flow_id}")
+    print(f"Source      : {flow.src_ip}:{flow.src_port}")
+    print(f"Destination : {flow.dst_ip}:{flow.dst_port}")
+    print(f"Protocol    : {flow.protocol}")
+    print(f"Packets     : {flow.packet_count}")
+    print(f"Bytes       : {flow.bytes}")
+    print(f"Status      : {flow.status}")
+    print("==========================\n")
+
+    # Store Flow ID with packet
+    packet_info["flow_id"] = flow.flow_id
+
+    # ------------------------------------
+    # Detection
+    # ------------------------------------
 
     result = detect(packet_info)
 
-    # --------------------------------------------
-    # Store Packet in Database
-    # --------------------------------------------
+    # ------------------------------------
+    # Console Output
+    # ------------------------------------
 
-    insert_packet(packet_info, result)
+    if result["status"] == "ALERT":
 
-    # --------------------------------------------
-    # Display Packet Information
-    # --------------------------------------------
+        display_alert(packet_info, result)
 
-    print("\n")
-    print("=" * 65)
-    print(f"{'PACKET ANALYSIS':^65}")
-    print("=" * 65)
+    else:
 
-    print(f"Packet ID        : {packet_id}")
-    print(f"Timestamp        : {packet_info['timestamp']}")
-    print(f"Source IP        : {packet_info['src_ip']}")
-    print(f"Destination IP   : {packet_info['dst_ip']}")
-    print(f"Protocol         : {packet_info['protocol']}")
-
-    if packet_info["src_port"] is not None:
-        print(f"Source Port      : {packet_info['src_port']}")
-
-    if packet_info["dst_port"] is not None:
-        print(f"Destination Port : {packet_info['dst_port']}")
-
-    print(f"Packet Size      : {packet_info['packet_size']} Bytes")
-
-    print("-" * 65)
-
-    print(f"Status           : {result['status']}")
-    print(f"Severity         : {result['severity']}")
-    print(f"Rule ID          : {result['rule_id']}")
-    print(f"Attack           : {result['attack']}")
-    print(f"Reason           : {result['reason']}")
-
-    print("=" * 65)
-
-    # --------------------------------------------
-    # Print Security Summary
-    # --------------------------------------------
-
-    if summary_required():
-
-        security_summary()
+        display_live_status()
