@@ -1,9 +1,11 @@
 """
 ====================================================
 Network Intrusion Detection System (NIDS)
-Module : Session
-Description:
+
+Module : Session Object
+
 Represents one IDS monitoring session.
+
 ====================================================
 """
 
@@ -11,9 +13,6 @@ from datetime import datetime
 
 
 class Session:
-    """
-    Represents one monitoring session.
-    """
 
     def __init__(self, session_id):
 
@@ -25,9 +24,9 @@ class Session:
 
         self.status = "ACTIVE"
 
-        # ----------------------------
+        # ==================================================
         # Runtime Statistics
-        # ----------------------------
+        # ==================================================
 
         self.total_packets = 0
 
@@ -41,22 +40,24 @@ class Session:
 
         self.risk = "LOW"
 
-    # ==========================================
+    # ==================================================
     # Packet Counter
-    # ==========================================
+    # ==================================================
 
     def add_packet(self):
 
         self.total_packets += 1
 
-    # ==========================================
-    # Flow Counter
-    # ==========================================
+    # ==================================================
+    # Flow Statistics
+    # ==================================================
 
-    def update_flows(self,
-                     total,
-                     active,
-                     completed):
+    def update_flows(
+        self,
+        total,
+        active,
+        completed
+    ):
 
         self.total_flows = total
 
@@ -64,33 +65,47 @@ class Session:
 
         self.completed_flows = completed
 
-    # ==========================================
+    # ==================================================
     # Alert Counter
-    # ==========================================
+    # ==================================================
 
     def add_alert(self):
 
         self.total_alerts += 1
 
-    # ==========================================
+    # ==================================================
     # Risk Level
-    # ==========================================
+    # ==================================================
+
     def update_risk(self, risk):
 
-     levels = {
-        "INFO": 0,
-        "LOW": 1,
-        "MEDIUM": 2,
-        "HIGH": 3,
-        "CRITICAL": 4
-    }
+        levels = {
 
-    if risk in levels and levels[risk] > levels[self.risk]:
-        self.risk = risk
+            "LOW": 1,
 
-    # ==========================================
+            "MEDIUM": 2,
+
+            "HIGH": 3,
+
+            "CRITICAL": 4
+
+        }
+
+        if (
+
+            risk in levels
+
+            and
+
+            levels[risk] > levels[self.risk]
+
+        ):
+
+            self.risk = risk
+
+    # ==================================================
     # Close Session
-    # ==========================================
+    # ==================================================
 
     def close(self):
 
@@ -98,20 +113,26 @@ class Session:
 
         self.status = "COMPLETED"
 
-    # ==========================================
+    # ==================================================
     # Session Duration
-    # ==========================================
+    # ==================================================
 
     @property
     def duration(self):
 
         end = self.end_time or datetime.now()
 
-        return (end - self.start_time).total_seconds()
+        return (
 
-    # ==========================================
+            end -
+
+            self.start_time
+
+        ).total_seconds()
+
+    # ==================================================
     # Convert to Dictionary
-    # ==========================================
+    # ==================================================
 
     def to_dict(self):
 

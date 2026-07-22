@@ -1,19 +1,22 @@
 """
 ====================================================
 Network Intrusion Detection System (NIDS)
-Module : Flow Class
+
+Module : Flow Object
+
 Description:
-Represents a single communication flow.
+Represents one network communication flow.
+
 ====================================================
 """
+
 
 from datetime import datetime
 
 
+
 class Flow:
-    """
-    Represents one network communication.
-    """
+
 
     def __init__(
         self,
@@ -26,59 +29,84 @@ class Flow:
         packet_size
     ):
 
+
         self.flow_id = flow_id
 
+
         self.src_ip = src_ip
+
         self.dst_ip = dst_ip
 
+
         self.src_port = src_port
+
         self.dst_port = dst_port
 
+
         self.protocol = protocol
+
+
+
+        # Statistics
 
         self.packet_count = 1
 
         self.bytes = packet_size
 
+
+
         self.start_time = datetime.now()
 
         self.last_seen = self.start_time
 
+
         self.end_time = None
 
+
         self.status = "ACTIVE"
+
+
 
         self.duration = 0
 
         self.average_packet_size = packet_size
 
+
+
         self.packet_rate = 0
 
         self.byte_rate = 0
 
-        self.alerts = []
 
-        self.risk = "LOW"
 
-    # ----------------------------------------
+
+    # ==========================================
     # Update Flow
-    # ----------------------------------------
+    # ==========================================
 
     def update(self, packet_size):
 
+
         self.packet_count += 1
+
 
         self.bytes += packet_size
 
+
         self.last_seen = datetime.now()
+
 
         self.calculate_statistics()
 
-    # ----------------------------------------
+
+
+
+    # ==========================================
     # Calculate Statistics
-    # ----------------------------------------
+    # ==========================================
 
     def calculate_statistics(self):
+
 
         duration = (
 
@@ -88,11 +116,17 @@ class Flow:
 
         ).total_seconds()
 
+
+
         if duration <= 0:
 
             duration = 1
 
+
+
         self.duration = duration
+
+
 
         self.average_packet_size = (
 
@@ -102,6 +136,8 @@ class Flow:
 
         )
 
+
+
         self.packet_rate = (
 
             self.packet_count /
@@ -109,6 +145,8 @@ class Flow:
             duration
 
         )
+
+
 
         self.byte_rate = (
 
@@ -118,57 +156,77 @@ class Flow:
 
         )
 
-    # ----------------------------------------
+
+
+
+
+    # ==========================================
     # Close Flow
-    # ----------------------------------------
+    # ==========================================
 
     def close(self):
 
+
         self.end_time = datetime.now()
+
 
         self.status = "COMPLETED"
 
+
         self.calculate_statistics()
 
-    # ----------------------------------------
-    # Convert to Dictionary
-    # ----------------------------------------
+
+
+
+
+    # ==========================================
+    # Dictionary Conversion
+    # ==========================================
 
     def to_dict(self):
 
+
         return {
 
-            "flow_id": self.flow_id,
 
-            "src_ip": self.src_ip,
+            "flow_id":
+                self.flow_id,
 
-            "dst_ip": self.dst_ip,
 
-            "src_port": self.src_port,
+            "src_ip":
+                self.src_ip,
 
-            "dst_port": self.dst_port,
 
-            "protocol": self.protocol,
+            "dst_ip":
+                self.dst_ip,
 
-            "packet_count": self.packet_count,
 
-            "bytes": self.bytes,
+            "src_port":
+                self.src_port,
 
-            "duration": self.duration,
 
-            "average_packet_size":
-                self.average_packet_size,
+            "dst_port":
+                self.dst_port,
 
-            "packet_rate":
-                self.packet_rate,
 
-            "byte_rate":
-                self.byte_rate,
+            "protocol":
+                self.protocol,
+
+
+            "packet_count":
+                self.packet_count,
+
+
+            "bytes":
+                self.bytes,
+
+
+            "duration":
+                self.duration,
+
 
             "status":
-                self.status,
+                self.status
 
-            "risk":
-                self.risk
 
         }

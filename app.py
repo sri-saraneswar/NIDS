@@ -1,11 +1,19 @@
 """
 ====================================================
 Network Intrusion Detection System (NIDS)
+
 Main Application
+
+Starts:
+- Database
+- Monitoring Session
+- Packet Capture
+
 ====================================================
 """
 
 from capture.capture import start_capture
+
 from database.database import create_database
 
 from session.session_manager import (
@@ -15,9 +23,14 @@ from session.session_manager import (
 )
 
 
+# ==================================================
+# Print Session Summary
+# ==================================================
+
 def print_session_summary(summary):
 
     print("\n")
+
     print("=" * 60)
     print("                 SESSION SUMMARY")
     print("=" * 60)
@@ -38,32 +51,39 @@ def print_session_summary(summary):
     print("=" * 60)
 
 
+# ==================================================
+# Main
+# ==================================================
+
 def main():
 
     print("\n")
+
     print("=" * 60)
-    print("     NETWORK INTRUSION DETECTION SYSTEM")
+    print("        NETWORK INTRUSION DETECTION SYSTEM")
     print("=" * 60)
 
-    # ---------------------------------------------
-    # Database
-    # ---------------------------------------------
+    # -----------------------------
+    # Database Initialization
+    # -----------------------------
 
     create_database()
 
     print("Database Initialized Successfully.")
 
-    # ---------------------------------------------
-    # Session
-    # ---------------------------------------------
+    # -----------------------------
+    # Start Session
+    # -----------------------------
 
     session = start_session()
 
-    print(f"Monitoring Session : {session.session_id}")
+    print(
+        f"Monitoring Session : {session.session_id}"
+    )
 
-    # ---------------------------------------------
-    # Capture
-    # ---------------------------------------------
+    # -----------------------------
+    # Start Packet Capture
+    # -----------------------------
 
     try:
 

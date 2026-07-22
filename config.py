@@ -5,11 +5,23 @@ Configuration File
 ====================================================
 """
 
+
 # ==================================================
-# Network
+# Network Configuration
 # ==================================================
 
 DEFAULT_INTERFACE = None
+
+
+# ==================================================
+# Packet Storage
+# ==================================================
+
+# False because storing raw packets continuously
+# consumes memory
+
+STORE_PACKETS = False
+
 
 # ==================================================
 # Database
@@ -17,51 +29,70 @@ DEFAULT_INTERFACE = None
 
 DATABASE_NAME = "nids.db"
 
-STORE_PACKETS = False
-
 AUTO_SAVE_SESSION = True
+
 
 # ==================================================
 # Flow Tracking
 # ==================================================
 
+# Seconds after which a flow is considered completed
+
 FLOW_TIMEOUT = 60
 
+
 # ==================================================
-# Console
+# Security Summary
 # ==================================================
 
-STATUS_REFRESH_INTERVAL = 1
+# Print summary after every 100 packets
+
+SUMMARY_INTERVAL = 100
+
 
 # ==================================================
 # Detection Thresholds
 # ==================================================
 
+# ICMP Flood
+
 ICMP_THRESHOLD = 100
 ICMP_TIME_WINDOW = 5
+
+# Port Scan
 
 PORTSCAN_THRESHOLD = 20
 PORTSCAN_TIME_WINDOW = 5
 
+# SYN Flood
+
 SYN_THRESHOLD = 100
+
+# UDP Flood
+
 UDP_THRESHOLD = 100
+
+# DNS Flood
+
 DNS_THRESHOLD = 100
 
-# ==================================================
-# Packet Analysis
-# ==================================================
+# Large Packet
 
 LARGE_PACKET_SIZE = 1400
 
+
 # ==================================================
-# Standard Ports
+# Common Ports
 # ==================================================
 
 SSH_PORT = 22
 
 TELNET_PORT = 23
 
-FTP_PORTS = [20, 21]
+FTP_PORTS = [
+    20,
+    21
+]
 
 HTTP_PORT = 80
 
@@ -75,25 +106,29 @@ POP3_PORT = 110
 
 IMAP_PORT = 143
 
+
 # ==================================================
-# Alert Settings
+# Risk Calculation
 # ==================================================
 
+MEDIUM_WARNING_THRESHOLD = 10
+
+HIGH_ALERT_THRESHOLD = 5
+
+CRITICAL_ALERT_THRESHOLD = 15
+
+
+# ==================================================
+# Console
+# ==================================================
+
+STATUS_REFRESH_INTERVAL = 1
+
 ENABLE_ALERT_POPUP = True
+
 
 # ==================================================
 # Debug
 # ==================================================
 
 DEBUG = True
-# ==================================================
-# Security Summary
-# ==================================================
-
-SUMMARY_INTERVAL = 100          # Print summary every 100 packets
-
-MEDIUM_WARNING_THRESHOLD = 10   # 10 warnings -> MEDIUM risk
-
-HIGH_ALERT_THRESHOLD = 5         # 5 alerts -> HIGH risk
-
-CRITICAL_ALERT_THRESHOLD = 15    # 15 alerts -> CRITICAL risk

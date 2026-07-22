@@ -1,40 +1,57 @@
 """
 ====================================================
 Network Intrusion Detection System (NIDS)
+
 Module : Database Manager
-Description:
-Creates and manages the SQLite database.
+
+Uses SQLite for storing IDS information.
+
 ====================================================
 """
 
+
 import sqlite3
+
+
 
 from config import DATABASE_NAME
 
 
-# ==================================================
-# Database Connection
-# ==================================================
+
+
+
+# ==========================================
+# Connection
+# ==========================================
 
 def get_connection():
 
-    return sqlite3.connect(DATABASE_NAME)
+    return sqlite3.connect(
+        DATABASE_NAME
+    )
 
 
-# ==================================================
-# Create Database
-# ==================================================
+
+
+
+# ==========================================
+# Create Tables
+# ==========================================
 
 def create_database():
 
+
     conn = get_connection()
+
 
     cursor = conn.cursor()
 
-    # ---------------- Sessions ----------------
+
+
+    # Sessions
 
     cursor.execute("""
-
+    
     CREATE TABLE IF NOT EXISTS sessions(
 
         session_id TEXT PRIMARY KEY,

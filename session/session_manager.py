@@ -1,16 +1,20 @@
 """
 ====================================================
 Network Intrusion Detection System (NIDS)
+
 Module : Session Manager
 
-Description:
-Manages the current IDS monitoring session.
+Controls IDS monitoring sessions.
+
 ====================================================
 """
 
 from datetime import datetime
 
 from session.session import Session
+
+from database.database import save_session
+
 
 # ==================================================
 # Current Session
@@ -24,13 +28,12 @@ current_session = None
 # ==================================================
 
 def start_session():
-    """
-    Creates a new monitoring session.
-    """
 
     global current_session
 
-    session_id = datetime.now().strftime("SESSION-%Y%m%d-%H%M%S")
+    session_id = datetime.now().strftime(
+        "SESSION-%Y%m%d-%H%M%S"
+    )
 
     current_session = Session(session_id)
 
@@ -38,41 +41,40 @@ def start_session():
 
 
 # ==================================================
-# Stop Session
+# Get Current Session
 # ==================================================
-def stop_session():
 
-    global current_session
+def get_current_session():
 
-    if current_session is not None:
-
-        current_session.close()
-
-        save_session(
-
-            current_session.to_dict()
-
-        )
+    return current_session
 
 
 # ==================================================
-# Packet Counter
+# Update Packet Count
 # ==================================================
 
 def update_packet():
 
-    if current_session is not None:
+    if current_session:
 
         current_session.add_packet()
 
 
 # ==================================================
-# Flow Statistics
+# Update Flow Statistics
 # ==================================================
 
-def update_flows(total, active, completed):
+def update_flows(
 
-    if current_session is not None:
+    total,
+
+    active,
+
+    completed
+
+):
+
+    if current_session:
 
         current_session.update_flows(
 
@@ -86,25 +88,44 @@ def update_flows(total, active, completed):
 
 
 # ==================================================
-# Alert Counter
+# Update Alert Count
 # ==================================================
 
 def update_alert():
 
-    if current_session is not None:
+    if current_session:
 
         current_session.add_alert()
 
 
 # ==================================================
-# Risk Level
+# Update Risk Level
 # ==================================================
 
 def update_risk(risk):
 
-    if current_session is not None:
+    if current_session:
 
         current_session.update_risk(risk)
+
+
+# ==================================================
+# Stop Session
+# ==================================================
+
+def stop_session():
+
+    global current_session
+
+    if current_session:
+
+        current_session.close()
+
+        save_session(
+
+            current_session.to_dict()
+
+        )
 
 
 # ==================================================
@@ -113,17 +134,8 @@ def update_risk(risk):
 
 def get_session_summary():
 
-    if current_session is None:
+    if current_session:
 
-        return None
+        return current_session.to_dict()
 
-    return current_session.to_dict()
-
-
-# ==================================================
-# Current Session
-# ==================================================
-
-def get_current_session():
-
-    return current_session
+    return {}

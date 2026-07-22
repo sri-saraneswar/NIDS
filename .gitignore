@@ -1,12 +1,18 @@
+# Virtual environment
+venv/
+.venv/
+
 # Python cache
 __pycache__/
 *.py[cod]
 
-# Virtual environment
-venv/
-
-# VS Code
+# IDE
 .vscode/
 
-# SQLite database (optional)
-# database/nids.db
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
