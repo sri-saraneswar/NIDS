@@ -5,73 +5,142 @@ Configuration File
 ====================================================
 """
 
+
 # ==================================================
-# Packet Capture
+# Network Configuration
 # ==================================================
 
-# Whether Scapy should store captured packets in memory
+DEFAULT_INTERFACE = None
+
+
+# ==================================================
+# Packet Storage
+# ==================================================
+
+# False because storing raw packets
+# continuously consumes RAM
+
 STORE_PACKETS = False
 
-# Print security summary after every N packets
-SUMMARY_INTERVAL = 20
+
+# ==================================================
+# Database
+# ==================================================
+
+DATABASE_NAME = "nids.db"
 
 
 # ==================================================
-# ICMP Flood Detection
+# Flow Tracking
 # ==================================================
 
-# Maximum ICMP packets allowed within the time window
-ICMP_THRESHOLD = 10
+# Seconds after which a flow is considered completed
 
-# Time window (seconds)
+FLOW_TIMEOUT = 60
+
+
+
+# ==================================================
+# Security Summary
+# ==================================================
+
+SUMMARY_INTERVAL = 100
+
+
+
+# ==================================================
+# Detection Thresholds
+# ==================================================
+
+# ICMP Flood
+
+ICMP_THRESHOLD = 100
+
 ICMP_TIME_WINDOW = 5
 
 
-# ==================================================
-# Port Scan Detection
-# ==================================================
 
-# Number of different ports accessed within the time window
-PORTSCAN_THRESHOLD = 10
+# Port Scan
 
-# Time window (seconds)
+PORTSCAN_THRESHOLD = 20
+
 PORTSCAN_TIME_WINDOW = 5
 
 
-# ==================================================
-# Packet Size Detection
-# ==================================================
 
-# Packets larger than this will be flagged
+# SYN Flood
+
+SYN_THRESHOLD = 100
+
+
+
+# UDP Flood
+
+UDP_THRESHOLD = 100
+
+
+
+# DNS Flood
+
+DNS_THRESHOLD = 100
+
+
+
+# Large Packet
+
 LARGE_PACKET_SIZE = 1400
 
 
-# ==================================================
-# Overall Risk Thresholds
-# ==================================================
-
-# ALERT count required for HIGH risk
-HIGH_ALERT_THRESHOLD = 5
-
-# ALERT count required for CRITICAL risk
-CRITICAL_ALERT_THRESHOLD = 10
-
-# WARNING count required for MEDIUM risk
-MEDIUM_WARNING_THRESHOLD = 10
-
 
 # ==================================================
-# Common Service Ports
+# Common Ports
 # ==================================================
 
 SSH_PORT = 22
+
 TELNET_PORT = 23
 
-FTP_PORTS = [20, 21]
+FTP_PORTS = [
+    20,
+    21
+]
 
 HTTP_PORT = 80
+
 HTTPS_PORT = 443
 
 DNS_PORT = 53
 
-SMB_PORTS = [139, 445]
+SMTP_PORT = 25
+
+POP3_PORT = 110
+
+IMAP_PORT = 143
+
+
+
+# ==================================================
+# Risk Calculation
+# ==================================================
+
+MEDIUM_WARNING_THRESHOLD = 10
+
+HIGH_ALERT_THRESHOLD = 5
+
+CRITICAL_ALERT_THRESHOLD = 15
+
+
+
+# ==================================================
+# Console
+# ==================================================
+
+STATUS_REFRESH_INTERVAL = 1
+
+
+
+# ==================================================
+# Debug
+# ==================================================
+
+DEBUG = True
