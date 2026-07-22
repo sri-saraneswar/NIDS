@@ -2,11 +2,9 @@
 ====================================================
 Network Intrusion Detection System (NIDS)
 Module : Packet Capture
-
 Description:
-Captures live network packets from the selected
-network interface, extracts important information,
-and forwards it to the Analyzer Module.
+Captures live network packets, extracts important
+information and forwards it to the Analyzer Module.
 ====================================================
 """
 
@@ -22,50 +20,49 @@ from scapy.all import (
 )
 
 from analyzer.analyzer import analyze_packet
+from console.console_manager import display_startup
 from config import STORE_PACKETS
 
 
 # ==================================================
-# Display Available Network Interfaces
+# Display Available Interfaces
 # ==================================================
 
 def display_interfaces():
-    """
-    Displays all available network interfaces.
-    """
 
     interfaces = get_if_list()
 
     print("\nAvailable Network Interfaces\n")
 
     for index, interface in enumerate(interfaces, start=1):
+
         print(f"{index}. {interface}")
 
     return interfaces
 
 
 # ==================================================
-# Select Network Interface
+# Select Interface
 # ==================================================
 
 def select_interface():
-    """
-    Allows the user to select a network interface.
-    """
 
     interfaces = display_interfaces()
 
     while True:
 
         try:
+
             choice = int(input("\nSelect Interface : "))
 
             if 1 <= choice <= len(interfaces):
+
                 return interfaces[choice - 1]
 
-            print("Invalid selection. Please try again.")
+            print("Invalid selection.")
 
         except ValueError:
+
             print("Please enter a valid number.")
 
 
@@ -74,10 +71,6 @@ def select_interface():
 # ==================================================
 
 def process_packet(packet):
-    """
-    Extracts useful information from each captured packet
-    and sends it to the Analyzer Module.
-    """
 
     # Ignore non-IP packets
     if IP not in packet:
@@ -93,7 +86,6 @@ def process_packet(packet):
     src_port = None
     dst_port = None
 
-    # TCP Packet
     if TCP in packet:
 
         protocol = "TCP"
@@ -101,7 +93,6 @@ def process_packet(packet):
         src_port = packet[TCP].sport
         dst_port = packet[TCP].dport
 
-    # UDP Packet
     elif UDP in packet:
 
         protocol = "UDP"
@@ -109,7 +100,6 @@ def process_packet(packet):
         src_port = packet[UDP].sport
         dst_port = packet[UDP].dport
 
-    # ICMP Packet
     elif ICMP in packet:
 
         protocol = "ICMP"
@@ -132,7 +122,7 @@ def process_packet(packet):
 
     }
 
-    # Send packet to analyzer
+    # Send packet to Analyzer
     analyze_packet(packet_info)
 
 
@@ -147,12 +137,8 @@ def start_capture():
 
     interface = select_interface()
 
-    print("\n")
-    print("=" * 60)
-    print("Starting Network IDS")
-    print(f"Listening Interface : {interface}")
-    print("Press CTRL + C to stop")
-    print("=" * 60)
+    # Display startup screen
+    display_startup(interface)
 
     try:
 
@@ -169,9 +155,3 @@ def start_capture():
         print("Stopping Packet Capture...")
         print("Thank you for using the NIDS.")
         print("=" * 60)
-
-    except Exception as error:
-
-        print("\nAn error occurred while capturing packets.")
-        print(f"Error: {error}")
-        
