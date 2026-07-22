@@ -1,83 +1,35 @@
 """
 ====================================================
-Network Intrusion Detection System (NIDS)
-Module : Detection Engine
+Network Intrusion Detection System
 
-Description:
-Coordinates the intrusion detection process by
-applying IDS rules, updating network statistics,
-and returning the detection result.
+Detection Controller
+
 ====================================================
 """
 
+
 from detection.rules import detect_rules
 
-from detection.statistics import (
-    update_statistics,
-    should_print_summary
-)
+
+from detection.statistics import update_statistics
 
 
-# ==================================================
-# Detection Engine
-# ==================================================
+
 
 def detect(packet_info):
-    """
-    Applies IDS rules to a captured packet,
-    updates network statistics, and returns
-    the detection result.
 
-    Parameters
-    ----------
-    packet_info : dict
-        Packet information received from the
-        Capture Module.
-
-    Returns
-    -------
-    dict
-        Detection result containing:
-        - status
-        - severity
-        - rule_id
-        - attack
-        - reason
-    """
-
-    # ----------------------------------------------
-    # Apply Detection Rules
-    # ----------------------------------------------
 
     result = detect_rules(packet_info)
 
-    # ----------------------------------------------
-    # Update Statistics
-    # ----------------------------------------------
 
-    update_statistics(packet_info, result)
 
-    # ----------------------------------------------
-    # Return Detection Result
-    # ----------------------------------------------
+    update_statistics(
+
+        packet_info,
+
+        result
+
+    )
+
 
     return result
-
-
-# ==================================================
-# Security Summary Trigger
-# ==================================================
-
-def summary_required():
-    """
-    Determines whether the security summary
-    should be displayed.
-
-    Returns
-    -------
-    bool
-        True if the configured summary interval
-        has been reached.
-    """
-
-    return should_print_summary()

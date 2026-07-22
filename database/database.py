@@ -1,218 +1,195 @@
 """
 ====================================================
 Network Intrusion Detection System (NIDS)
+
 Module : Database Manager
 
-Description:
-Handles SQLite database creation, packet storage,
-alert retrieval and log management.
+Uses SQLite for storing IDS information.
+
 ====================================================
 """
 
+
 import sqlite3
 
-# ==================================================
-# Database Configuration
-# ==================================================
-
-DATABASE_NAME = "database/nids.db"
 
 
-# ==================================================
-# Create Database and Table
-# ==================================================
+from config import DATABASE_NAME
+
+
+
+
+
+# ==========================================
+# Connection
+# ==========================================
+
+def get_connection():
+
+    return sqlite3.connect(
+        DATABASE_NAME
+    )
+
+
+
+
+
+# ==========================================
+# Create Tables
+# ==========================================
 
 def create_database():
-    """
-    Creates the SQLite database and packets table
-    if they do not already exist.
-    """
 
-    connection = sqlite3.connect(DATABASE_NAME)
 
-    cursor = connection.cursor()
+    conn = get_connection()
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS packets (
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cursor = conn.cursor()
 
-            timestamp TEXT,
 
-            src_ip TEXT,
 
-            dst_ip TEXT,
+    # Sessions
 
-            protocol TEXT,
+    cursor.execute("""
+    
+    CREATE TABLE IF NOT EXISTS sessions(
 
-            src_port INTEGER,
+        session_id TEXT PRIMARY KEY,
 
-            dst_port INTEGER,
+        start_time TEXT,
 
-            packet_size INTEGER,
+        end_time TEXT,
 
-            status TEXT,
+        duration REAL,
 
-            severity TEXT,
+        packets INTEGER,
 
-            rule_id TEXT,
+        flows INTEGER,
 
-            attack TEXT,
+        active_flows INTEGER,
 
-            reason TEXT
+        completed_flows INTEGER,
 
-        )
-        """
+        alerts INTEGER,
+
+        risk TEXT,
+
+        status TEXT
+
     )
 
-    connection.commit()
-
-    connection.close()
+    """)
 
 
-# ==================================================
-# Insert Packet
-# ==================================================
 
-def insert_packet(packet_info, result):
-    """
-    Stores one analyzed packet into the database.
-    """
 
-    connection = sqlite3.connect(DATABASE_NAME)
 
-    cursor = connection.cursor()
+    # Flows
 
-    cursor.execute(
-        """
-        INSERT INTO packets
-        (
-            timestamp,
-            src_ip,
-            dst_ip,
-            protocol,
-            src_port,
-            dst_port,
-            packet_size,
-            status,
-            severity,
-            rule_id,
-            attack,
-            reason
-        )
+    cursor.execute("""
+    
+    CREATE TABLE IF NOT EXISTS flows(
 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
+        flow_id TEXT PRIMARY KEY,
 
-            str(packet_info["timestamp"]),
+        session_id TEXT,
 
-            packet_info["src_ip"],
+        src_ip TEXT,
 
-            packet_info["dst_ip"],
+        dst_ip TEXT,
 
-            packet_info["protocol"],
+        src_port INTEGER,
 
-            packet_info["src_port"],
+        dst_port INTEGER,
 
-            packet_info["dst_port"],
+        protocol TEXT,
 
-            packet_info["packet_size"],
+        packets INTEGER,
 
-            result["status"],
+        bytes INTEGER,
 
-            result["severity"],
+        duration REAL,
 
-            result["rule_id"],
+        status TEXT
 
-            result["attack"],
-
-            result["reason"]
-
-        )
     )
 
-    connection.commit()
-
-    connection.close()
+    """)
 
 
-# ==================================================
-# Get All Packets
-# ==================================================
 
-def get_packets():
-    """
-    Returns all packets stored in the database.
-    """
 
-    connection = sqlite3.connect(DATABASE_NAME)
 
-    cursor = connection.cursor()
+    # Alerts
 
-    cursor.execute(
-        """
-        SELECT * FROM packets
-        ORDER BY id DESC
-        """
+    cursor.execute("""
+    
+    CREATE TABLE IF NOT EXISTS alerts(
+
+        alert_id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        session_id TEXT,
+
+        flow_id TEXT,
+
+        timestamp TEXT,
+
+        severity TEXT,
+
+        attack TEXT,
+
+        source_ip TEXT,
+
+        destination_ip TEXT,
+
+        description TEXT
+
     )
 
-    packets = cursor.fetchall()
-
-    connection.close()
-
-    return packets
+    """)
 
 
-# ==================================================
-# Get Only Alerts
-# ==================================================
 
-def get_alerts():
-    """
-    Returns only ALERT packets.
-    """
 
-    connection = sqlite3.connect(DATABASE_NAME)
 
-    cursor = connection.cursor()
+    # Packets
 
-    cursor.execute(
-        """
-        SELECT *
-        FROM packets
-        WHERE status='ALERT'
-        ORDER BY id DESC
-        """
+    cursor.execute("""
+    
+    CREATE TABLE IF NOT EXISTS packets(
+
+        packet_id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        session_id TEXT,
+
+        flow_id TEXT,
+
+        timestamp TEXT,
+
+        source_ip TEXT,
+
+        destination_ip TEXT,
+
+        source_port INTEGER,
+
+        destination_port INTEGER,
+
+        protocol TEXT,
+
+        packet_size INTEGER
+
     )
 
-    alerts = cursor.fetchall()
-
-    connection.close()
-
-    return alerts
+    """)
 
 
-# ==================================================
-# Clear Database
-# ==================================================
 
-def clear_database():
-    """
-    Deletes all packet records.
-    """
+    conn.commit()
 
-    connection = sqlite3.connect(DATABASE_NAME)
 
-    cursor = connection.cursor()
+    conn.close()
 
-    cursor.execute(
-        """
-        DELETE FROM packets
-        """
+
+    print(
+        "Database Tables Created Successfully."
     )
-
-    connection.commit()
-
-    connection.close()

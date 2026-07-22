@@ -1,33 +1,45 @@
 """
 ====================================================
 Network Intrusion Detection System (NIDS)
+
 Module : Detection Rules
 
-Description:
-Contains all rule-based and behaviour-based
-intrusion detection logic.
+Contains IDS detection logic.
+
 ====================================================
 """
 
+
 from datetime import datetime
+
+
 
 from detection.state import (
     icmp_history,
-    port_history
+    port_history,
+    syn_history,
+    udp_history
 )
+
+
 
 from config import (
     ICMP_THRESHOLD,
     ICMP_TIME_WINDOW,
+
     PORTSCAN_THRESHOLD,
     PORTSCAN_TIME_WINDOW,
+
     LARGE_PACKET_SIZE,
+
     SSH_PORT,
     TELNET_PORT,
     FTP_PORTS,
+
     HTTP_PORT,
     HTTPS_PORT
 )
+
 
 
 # ==================================================
@@ -35,273 +47,326 @@ from config import (
 # ==================================================
 
 def detect_rules(packet_info):
-    """
-    Applies IDS detection rules to a packet.
 
-    Parameters
-    ----------
-    packet_info : dict
-
-    Returns
-    -------
-    dict
-        Detection result.
-    """
 
     protocol = packet_info["protocol"]
+
     src_ip = packet_info["src_ip"]
+
     dst_ip = packet_info["dst_ip"]
 
-    src_port = packet_info["src_port"]
     dst_port = packet_info["dst_port"]
 
     packet_size = packet_info["packet_size"]
 
+
+
     current_time = datetime.now()
 
-    # --------------------------------------------------
-    # Default Result
-    # --------------------------------------------------
+
 
     result = {
 
-        "status": "NORMAL",
 
-        "severity": "LOW",
+        "status":"NORMAL",
 
-        "rule_id": "NIDS-000",
+        "severity":"LOW",
 
-        "attack": "None",
+        "rule_id":"NIDS-000",
 
-        "reason": "Normal Network Traffic"
+        "attack":"None",
+
+        "reason":"Normal Network Traffic"
 
     }
 
-    # ==================================================
-    # RULE 1 : ICMP Flood Detection
-    # ==================================================
+
+
+    # =============================================
+    # ICMP Flood Detection
+    # =============================================
 
     if protocol == "ICMP":
 
+
         history = icmp_history[src_ip]
+
 
         history.append(current_time)
 
+
+
         while history:
 
-            age = (current_time - history[0]).total_seconds()
 
-            if age > ICMP_TIME_WINDOW:
+            if (
+
+                current_time -
+
+                history[0]
+
+            ).total_seconds() > ICMP_TIME_WINDOW:
+
+
                 history.popleft()
+
+
             else:
+
                 break
+
+
 
         if len(history) >= ICMP_THRESHOLD:
 
+
             return {
 
-                "status": "ALERT",
 
-                "severity": "HIGH",
+                "status":"ALERT",
 
-                "rule_id": "NIDS-001",
+                "severity":"HIGH",
 
-                "attack": "ICMP Flood",
+                "rule_id":"NIDS-001",
+
+                "attack":"ICMP Flood",
 
                 "reason":
-                    f"{len(history)} ICMP packets received "
-                    f"from {src_ip} within "
-                    f"{ICMP_TIME_WINDOW} seconds"
+                f"{len(history)} ICMP packets from {src_ip}"
 
             }
 
-    # ==================================================
-    # RULE 2 : Port Scan Detection
-    # ==================================================
 
-    if dst_port is not None:
+
+
+    # =============================================
+    # Port Scan Detection
+    # =============================================
+
+
+    if dst_port:
+
 
         history = port_history[src_ip]
 
-        history.append((current_time, dst_port))
+
+        history.append(
+            (
+                current_time,
+                dst_port
+            )
+        )
+
+
 
         while history:
 
-            age = (current_time - history[0][0]).total_seconds()
 
-            if age > PORTSCAN_TIME_WINDOW:
+            if (
+
+                current_time -
+
+                history[0][0]
+
+            ).total_seconds() > PORTSCAN_TIME_WINDOW:
+
+
                 history.popleft()
+
+
             else:
+
                 break
+
+
+
 
         unique_ports = {
 
+
             port
 
-            for _, port in history
+            for _,port in history
 
         }
+
+
 
         if len(unique_ports) >= PORTSCAN_THRESHOLD:
 
+
             return {
 
-                "status": "ALERT",
 
-                "severity": "HIGH",
+                "status":"ALERT",
 
-                "rule_id": "NIDS-002",
+                "severity":"HIGH",
 
-                "attack": "Port Scan",
+                "rule_id":"NIDS-002",
+
+                "attack":"Port Scan",
 
                 "reason":
-                    f"{len(unique_ports)} different ports "
-                    f"accessed by {src_ip}"
+                f"{len(unique_ports)} ports accessed"
 
             }
 
-    # ==================================================
-    # RULE 3 : Telnet Traffic
-    # ==================================================
+
+
+
+    # =============================================
+    # Telnet
+    # =============================================
 
     if dst_port == TELNET_PORT:
 
+
         return {
 
-            "status": "WARNING",
 
-            "severity": "MEDIUM",
+            "status":"WARNING",
 
-            "rule_id": "NIDS-003",
+            "severity":"MEDIUM",
 
-            "attack": "Telnet",
+            "rule_id":"NIDS-003",
 
-            "reason": "Insecure Telnet Connection"
+            "attack":"Telnet",
+
+            "reason":"Insecure Telnet Traffic"
 
         }
 
-    # ==================================================
-    # RULE 4 : FTP Traffic
-    # ==================================================
+
+
+
+
+    # =============================================
+    # FTP
+    # =============================================
 
     if dst_port in FTP_PORTS:
 
+
         return {
 
-            "status": "WARNING",
 
-            "severity": "MEDIUM",
+            "status":"WARNING",
 
-            "rule_id": "NIDS-004",
+            "severity":"MEDIUM",
 
-            "attack": "FTP",
+            "rule_id":"NIDS-004",
 
-            "reason": "FTP Traffic (Plaintext Credentials)"
+            "attack":"FTP",
+
+            "reason":"Plaintext FTP Communication"
 
         }
 
-    # ==================================================
-    # RULE 5 : SSH Traffic
-    # ==================================================
+
+
+
+
+    # =============================================
+    # SSH
+    # =============================================
 
     if dst_port == SSH_PORT:
 
+
         return {
 
-            "status": "INFO",
 
-            "severity": "LOW",
+            "status":"INFO",
 
-            "rule_id": "NIDS-005",
+            "severity":"LOW",
 
-            "attack": "SSH",
+            "rule_id":"NIDS-005",
 
-            "reason": "Secure SSH Traffic"
+            "attack":"SSH",
+
+            "reason":"Secure SSH Traffic"
 
         }
 
-    # ==================================================
-    # RULE 6 : HTTP Traffic
-    # ==================================================
+
+
+
+
+    # =============================================
+    # HTTP
+    # =============================================
 
     if dst_port == HTTP_PORT:
 
+
         return {
 
-            "status": "INFO",
 
-            "severity": "LOW",
+            "status":"INFO",
 
-            "rule_id": "NIDS-006",
+            "severity":"LOW",
 
-            "attack": "HTTP",
+            "rule_id":"NIDS-006",
 
-            "reason": "HTTP Web Traffic"
+            "attack":"HTTP",
+
+            "reason":"Web Traffic"
 
         }
 
-    # ==================================================
-    # RULE 7 : HTTPS Traffic
-    # ==================================================
+
+
+
+
+    # =============================================
+    # HTTPS
+    # =============================================
 
     if dst_port == HTTPS_PORT:
 
-        return {
-
-            "status": "INFO",
-
-            "severity": "LOW",
-
-            "rule_id": "NIDS-007",
-
-            "attack": "HTTPS",
-
-            "reason": "Encrypted HTTPS Traffic"
-
-        }
-
-    # ==================================================
-    # RULE 8 : Broadcast Traffic
-    # ==================================================
-
-    if dst_ip.endswith(".255"):
 
         return {
 
-            "status": "INFO",
 
-            "severity": "LOW",
+            "status":"INFO",
 
-            "rule_id": "NIDS-008",
+            "severity":"LOW",
 
-            "attack": "Broadcast",
+            "rule_id":"NIDS-007",
 
-            "reason": "Broadcast Network Traffic"
+            "attack":"HTTPS",
+
+            "reason":"Encrypted Web Traffic"
 
         }
 
-    # ==================================================
-    # RULE 9 : Large Packet Detection
-    # ==================================================
+
+
+
+
+    # =============================================
+    # Large Packet
+    # =============================================
 
     if packet_size > LARGE_PACKET_SIZE:
 
+
         return {
 
-            "status": "WARNING",
 
-            "severity": "MEDIUM",
+            "status":"WARNING",
 
-            "rule_id": "NIDS-009",
+            "severity":"MEDIUM",
 
-            "attack": "Large Packet",
+            "rule_id":"NIDS-008",
 
-            "reason": f"Packet Size = {packet_size} bytes"
+            "attack":"Large Packet",
+
+            "reason":
+            f"Packet size {packet_size}"
 
         }
 
-    # ==================================================
-    # Default Result
-    # ==================================================
 
-    return resultS
+
+    return result

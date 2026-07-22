@@ -1,86 +1,156 @@
 """
 ====================================================
 Network Intrusion Detection System (NIDS)
+
 Module : Console Manager
-Description:
-Handles all console output.
+
+Displays:
+- Startup
+- Live Status
+- Alerts
+
 ====================================================
 """
+
 
 import detection.statistics as stats
 
 
-# ==================================================
-# Startup Screen
-# ==================================================
+
+
+
+# ==========================================
+# Startup Display
+# ==========================================
 
 def display_startup(interface):
 
+
     print("\n")
-    print("=" * 70)
-    print("          NETWORK INTRUSION DETECTION SYSTEM")
-    print("=" * 70)
-
-    print(f"Monitoring Interface : {interface}")
-    print("Status               : Monitoring Network")
-    print("Press CTRL + C to stop")
-
-    print("=" * 70)
 
 
-# ==================================================
-# Live Status
-# ==================================================
-
-def display_live_status():
-
-    alerts = stats.status_counter["ALERT"]
-
-    warnings = stats.status_counter["WARNING"]
-
-    risk = stats.calculate_risk()
+    print("="*60)
 
     print(
-        f"\rPackets : {stats.total_packets:<8}"
-        f"Alerts : {alerts:<5}"
-        f"Warnings : {warnings:<5}"
-        f"Risk : {risk:<10}",
-        end="",
-        flush=True
+        "      NETWORK INTRUSION DETECTION SYSTEM"
+    )
+
+    print("="*60)
+
+
+
+    print(
+        f"Monitoring Interface : {interface}"
     )
 
 
-# ==================================================
-# Alert Panel
-# ==================================================
+    print(
+        "Status : Monitoring Network"
+    )
 
-def display_alert(packet_info, result):
+
+    print(
+        "Press CTRL+C to stop"
+    )
+
+
+    print("="*60)
+
+
+
+
+
+
+
+# ==========================================
+# Live Status
+# ==========================================
+
+def display_live_status():
+
+
+    alerts = stats.status_counter["ALERT"]
+
+
+    warnings = stats.status_counter["WARNING"]
+
+
+
+    print(
+
+        f"\rPackets : {stats.total_packets:<8}"
+
+        f" Alerts : {alerts:<5}"
+
+        f" Warnings : {warnings:<5}"
+
+        f" Risk : {stats.calculate_risk()}",
+
+        end="",
+
+        flush=True
+
+    )
+
+
+
+
+
+
+
+
+# ==========================================
+# Alert Display
+# ==========================================
+
+def display_alert(packet_info,result):
+
 
     print("\n")
-    print("=" * 70)
-    print("                 🚨 NETWORK ALERT 🚨")
-    print("=" * 70)
 
-    print(f"Time           : {packet_info['timestamp']}")
+    print("="*60)
 
-    print(f"Source IP      : {packet_info['src_ip']}")
+    print(
+        "              🚨 NETWORK ALERT 🚨"
+    )
 
-    print(f"Destination IP : {packet_info['dst_ip']}")
+    print("="*60)
 
-    print(f"Protocol       : {packet_info['protocol']}")
 
-    if packet_info["src_port"] is not None:
-        print(f"Source Port    : {packet_info['src_port']}")
 
-    if packet_info["dst_port"] is not None:
-        print(f"Destination Port : {packet_info['dst_port']}")
+    print(
+        f"Time : {packet_info['timestamp']}"
+    )
 
-    print(f"Severity       : {result['severity']}")
 
-    print(f"Attack         : {result['attack']}")
+    print(
+        f"Source IP : {packet_info['src_ip']}"
+    )
 
-    print(f"Reason         : {result['reason']}")
 
-    print("=" * 70)
+    print(
+        f"Destination IP : {packet_info['dst_ip']}"
+    )
 
-    display_live_status()
+
+    print(
+        f"Protocol : {packet_info['protocol']}"
+    )
+
+
+    print(
+        f"Severity : {result['severity']}"
+    )
+
+
+    print(
+        f"Attack : {result['attack']}"
+    )
+
+
+    print(
+        f"Reason : {result['reason']}"
+    )
+
+
+    print("="*60)

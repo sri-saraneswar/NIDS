@@ -1,40 +1,50 @@
 """
 ====================================================
 Network Intrusion Detection System (NIDS)
+
 Module : Flow Statistics
-Description:
-Stores runtime information about all flows.
+
+Stores runtime flow information.
+
 ====================================================
 """
 
+
 from collections import Counter
 
-# ==================================================
-# Runtime Flow Tables
-# ==================================================
+
+
+# Active flows
 
 active_flows = {}
 
+
+
+# Completed flows
+
 completed_flows = []
 
-# ==================================================
+
+
 # Counters
-# ==================================================
 
 total_flows = 0
 
+
 active_flow_count = 0
+
 
 completed_flow_count = 0
 
-# ==================================================
-# Communication Statistics
-# ==================================================
+
+
+
+# Communication statistics
 
 source_counter = Counter()
 
+
 destination_counter = Counter()
 
-protocol_counter = Counter()
 
-flow_protocol_counter = Counter()
+protocol_counter = Counter()
