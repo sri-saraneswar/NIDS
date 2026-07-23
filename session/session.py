@@ -366,16 +366,119 @@ class Session:
 
 
 
-@property
-def duration(self):
+    @property
+    def duration(self):
 
-    end=self.end_time or datetime.now()
+        end=self.end_time or datetime.now()
 
 
-    return (
+        return (
 
-        end -
+            end -
 
-        self.start_time
+            self.start_time
 
-    ).total_seconds()
+        ).total_seconds()
+
+
+
+
+
+# =====================================================
+# Dictionary Format
+# =====================================================
+
+
+    def to_dict(self):
+
+
+        return {
+
+            "session_id":
+
+                self.session_id,
+
+            "start_time":
+
+                self.start_time,
+
+            "end_time":
+
+                self.end_time,
+
+            "duration":
+
+                self.duration,
+
+            "status":
+
+                self.status,
+
+            "packets":
+
+                self.total_packets,
+
+            "flows":
+
+                self.total_flows,
+
+            "active_flows":
+
+                self.active_flows,
+
+            "completed_flows":
+
+                self.completed_flows,
+
+            "alerts":
+
+                self.total_alerts,
+
+            "warnings":
+
+                self.total_warnings,
+
+            "risk":
+
+                self.risk,
+
+            "unique_attacks":
+
+                len(self.unique_attacks)
+
+        }
+
+
+
+
+
+# =====================================================
+# Attack Summary
+# =====================================================
+
+
+    def get_attack_summary(self):
+
+
+        summary = []
+
+
+        for attack in self.attack_history:
+
+
+            item = dict(attack)
+
+
+            item["packets"] = item.get(
+
+                "packet_count",
+
+                0
+
+            )
+
+
+            summary.append(item)
+
+
+        return summary

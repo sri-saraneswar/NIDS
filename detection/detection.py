@@ -21,10 +21,10 @@ Statistics
 """
 
 
-from detection.rules_manager import detect_attacks
+from detection.manager import detect_attacks
 
 
-from detection.threshold_manager import (
+from detection.threshold import (
 
     process_attacks,
 
@@ -53,6 +53,8 @@ def detect(packet):
 
     result = {
 
+
+        "status":"OK",
 
         "alerts":[],
 
@@ -87,6 +89,13 @@ def detect(packet):
 
 
         result["alerts"] = events
+
+
+
+        if events:
+
+
+            result["status"] = "ALERT"
 
 
 
