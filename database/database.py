@@ -4,7 +4,13 @@ Network Intrusion Detection System (NIDS)
 
 Module : Database Manager
 
-Uses SQLite for storing IDS information.
+Stores:
+
+1. Sessions
+2. Attack Sessions
+3. Alerts
+4. Flows
+5. Suspicious Packets
 
 ====================================================
 """
@@ -13,45 +19,62 @@ Uses SQLite for storing IDS information.
 import sqlite3
 
 
-
 from config import DATABASE_NAME
 
 
 
 
 
-# ==========================================
-# Connection
-# ==========================================
+# =====================================================
+# Database Connection
+# =====================================================
+
 
 def get_connection():
 
-    return sqlite3.connect(
+
+    conn = sqlite3.connect(
+
         DATABASE_NAME
+
     )
 
 
+    conn.execute(
+
+        "PRAGMA foreign_keys = ON"
+
+    )
+
+
+    return conn
 
 
 
-# ==========================================
-# Create Tables
-# ==========================================
+
+
+
+# =====================================================
+# Initialize Database
+# =====================================================
+
 
 def create_database():
 
 
     conn = get_connection()
 
-
     cursor = conn.cursor()
 
 
 
-    # Sessions
+    # =================================================
+    # Sessions Table
+    # =================================================
+
 
     cursor.execute("""
-    
+
     CREATE TABLE IF NOT EXISTS sessions(
 
         session_id TEXT PRIMARY KEY,
@@ -62,25 +85,112 @@ def create_database():
 
         duration REAL,
 
-        packets INTEGER,
+        status TEXT,
 
-        flows INTEGER,
+        total_packets INTEGER,
+
+        total_flows INTEGER,
 
         active_flows INTEGER,
 
         completed_flows INTEGER,
 
-        alerts INTEGER,
+        total_alerts INTEGER,
 
-        risk TEXT,
+        total_warnings INTEGER,
 
-        status TEXT
+        highest_risk TEXT,
+
+        unique_attacks INTEGER
 
     )
 
     """)
 
-    # ---------------- Flows ----------------
+
+
+
+
+    # =================================================
+    # Attack Sessions Table
+    # =================================================
+
+
+    cursor.execute("""
+
+    CREATE TABLE IF NOT EXISTS attacks(
+
+        attack_id TEXT PRIMARY KEY,
+
+        session_id TEXT,
+
+        attack_type TEXT,
+
+        severity TEXT,
+
+        source_ip TEXT,
+
+        destination_ip TEXT,
+
+        start_time TEXT,
+
+        end_time TEXT,
+
+        duration REAL,
+
+        packet_count INTEGER,
+
+        attack_details TEXT
+
+    )
+
+    """)
+
+
+
+
+
+
+    # =================================================
+    # Alert Table
+    # =================================================
+
+
+    cursor.execute("""
+
+    CREATE TABLE IF NOT EXISTS alerts(
+
+        alert_id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        session_id TEXT,
+
+        attack_id TEXT,
+
+        timestamp TEXT,
+
+        severity TEXT,
+
+        attack_type TEXT,
+
+        source_ip TEXT,
+
+        destination_ip TEXT,
+
+        message TEXT
+
+    )
+
+    """)
+
+
+
+
+
+
+    # =================================================
+    # Flow Table
+    # =================================================
+
 
     cursor.execute("""
 
@@ -112,45 +222,26 @@ def create_database():
 
     """)
 
-    # ---------------- Alerts ----------------
+
+
+
+
+
+
+    # =================================================
+    # Suspicious Packet Table
+    # =================================================
+
 
     cursor.execute("""
 
-    CREATE TABLE IF NOT EXISTS alerts(
-
-        alert_id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-        session_id TEXT,
-
-        flow_id TEXT,
-
-        timestamp TEXT,
-
-        severity TEXT,
-
-        attack TEXT,
-
-        source_ip TEXT,
-
-        destination_ip TEXT,
-
-        description TEXT
-
-    )
-
-    """)
-
-    # ---------------- Packets ----------------
-
-    cursor.execute("""
-
-    CREATE TABLE IF NOT EXISTS packets(
+    CREATE TABLE IF NOT EXISTS suspicious_packets(
 
         packet_id INTEGER PRIMARY KEY AUTOINCREMENT,
 
         session_id TEXT,
 
-        flow_id TEXT,
+        attack_id TEXT,
 
         timestamp TEXT,
 
@@ -166,231 +257,456 @@ def create_database():
 
         packet_size INTEGER,
 
-        information TEXT
+        description TEXT
 
     )
 
     """)
 
+
+
     conn.commit()
 
     conn.close()
 
-    print("Database Initialized Successfully.")
 
 
-# ==================================================
+    print(
+        "Database Initialized Successfully"
+    )
+
+
+
+
+
+
+
+
+# =====================================================
 # Save Session
-# ==================================================
+# =====================================================
+
 
 def save_session(summary):
+
 
     conn = get_connection()
 
     cursor = conn.cursor()
+
+
 
     cursor.execute("""
 
     INSERT OR REPLACE INTO sessions
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
-    """, (
+    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+
+    """,
+
+    (
 
         summary["session_id"],
 
-        str(summary["start_time"]),
 
-        str(summary["end_time"]),
+        str(
+            summary["start_time"]
+        ),
+
+
+        str(
+            summary["end_time"]
+        ),
+
 
         summary["duration"],
 
+
+        summary["status"],
+
+
         summary["packets"],
+
 
         summary["flows"],
 
+
         summary["active_flows"],
+
 
         summary["completed_flows"],
 
+
         summary["alerts"],
+
+
+        summary["warnings"],
+
 
         summary["risk"],
 
-        summary["status"]
+
+        summary["unique_attacks"]
 
     ))
+
+
 
     conn.commit()
 
     conn.close()
 
 
-# ==================================================
-# Save Packet
-# ==================================================
 
-def save_packet(packet_info, session_id):
+
+
+
+
+# =====================================================
+# Save Completed Attacks
+# =====================================================
+
+
+def save_attacks(session_id, attacks):
+
 
     conn = get_connection()
 
     cursor = conn.cursor()
+
+
+
+    for attack in attacks:
+
+
+        cursor.execute("""
+
+        INSERT OR REPLACE INTO attacks
+
+        VALUES(?,?,?,?,?,?,?,?,?,?,?)
+
+        """,
+
+        (
+
+            attack["alert_id"],
+
+
+            session_id,
+
+
+            attack["attack_type"],
+
+
+            attack["severity"],
+
+
+            attack["source_ip"],
+
+
+            attack["destination_ip"],
+
+
+            str(
+                attack.get(
+                    "start_time"
+                )
+            ),
+
+
+            str(
+                attack.get(
+                    "end_time"
+                )
+            ),
+
+
+            attack.get(
+                "duration",
+                0
+            ),
+
+
+            attack.get(
+                "packet_count",
+                0
+            ),
+
+
+            str(
+                attack.get(
+                    "details",
+                    {}
+                )
+            )
+
+        ))
+
+
+
+    conn.commit()
+
+    conn.close()
+
+
+
+
+
+
+
+
+# =====================================================
+# Save Alert
+# =====================================================
+
+
+def save_alert(session_id, attack):
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
 
     cursor.execute("""
 
-    INSERT INTO packets(
+    INSERT INTO alerts
 
-        session_id,
+    (
 
-        flow_id,
+    session_id,
 
-        timestamp,
+    attack_id,
 
-        source_ip,
+    timestamp,
 
-        destination_ip,
+    severity,
 
-        source_port,
+    attack_type,
 
-        destination_port,
+    source_ip,
 
-        protocol,
+    destination_ip,
 
-        packet_size,
-
-        information
+    message
 
     )
 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES(?,?,?,?,?,?,?,?)
 
-    """, (
+    """,
+
+    (
 
         session_id,
 
-        packet_info.get("flow_id"),
 
-        str(packet_info["timestamp"]),
+        attack["alert_id"],
 
-        packet_info["src_ip"],
 
-        packet_info["dst_ip"],
+        str(
+            attack["start_time"]
+        ),
 
-        packet_info["src_port"],
 
-        packet_info["dst_port"],
+        attack["severity"],
 
-        packet_info["protocol"],
 
-        packet_info["packet_size"],
+        attack["attack_type"],
 
-        ""
+
+        attack["source_ip"],
+
+
+        attack["destination_ip"],
+
+
+        attack["attack_type"]
+
+        +
+        " Detected"
 
     ))
+
+
 
     conn.commit()
 
     conn.close()
 
 
-# ==================================================
-# Save Flow
-# ==================================================
 
-def save_flow(flow, session_id):
+
+
+
+
+# =====================================================
+# Save Flow
+# =====================================================
+
+
+def save_flow(session_id, flow):
+
 
     conn = get_connection()
 
     cursor = conn.cursor()
+
+
 
     cursor.execute("""
 
     INSERT OR REPLACE INTO flows
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
-    """, (
+    VALUES(?,?,?,?,?,?,?,?,?,?,?)
+
+    """,
+
+    (
 
         flow.flow_id,
 
+
         session_id,
+
 
         flow.src_ip,
 
+
         flow.dst_ip,
+
 
         flow.src_port,
 
+
         flow.dst_port,
+
 
         flow.protocol,
 
+
         flow.packet_count,
+
 
         flow.bytes,
 
+
         flow.duration,
+
 
         flow.status
 
     ))
 
+
+
     conn.commit()
 
     conn.close()
 
 
-# ==================================================
-# Save Alert
-# ==================================================
 
-def save_alert(packet_info, result, session_id):
+
+
+
+
+# =====================================================
+# Save Suspicious Packet
+# =====================================================
+
+
+def save_suspicious_packet(
+
+        session_id,
+
+        attack_id,
+
+        packet
+
+):
+
 
     conn = get_connection()
 
     cursor = conn.cursor()
 
+
+
     cursor.execute("""
 
-    INSERT INTO alerts(
+    INSERT INTO suspicious_packets
 
-        session_id,
+    (
 
-        flow_id,
+    session_id,
 
-        timestamp,
+    attack_id,
 
-        severity,
+    timestamp,
 
-        attack,
+    source_ip,
 
-        source_ip,
+    destination_ip,
 
-        destination_ip,
+    source_port,
 
-        description
+    destination_port,
+
+    protocol,
+
+    packet_size,
+
+    description
 
     )
 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES(?,?,?,?,?,?,?,?,?,?)
 
-    """, (
+    """,
+
+    (
 
         session_id,
 
-        packet_info.get("flow_id"),
 
-        str(packet_info["timestamp"]),
+        attack_id,
 
-        result["severity"],
 
-        result["attack"],
+        str(
+            packet["timestamp"]
+        ),
 
-        packet_info["src_ip"],
 
-        packet_info["dst_ip"],
+        packet["src_ip"],
 
-        result["reason"]
+
+        packet["dst_ip"],
+
+
+        packet.get(
+            "src_port",
+            0
+        ),
+
+
+        packet.get(
+            "dst_port",
+            0
+        ),
+
+
+        packet["protocol"],
+
+
+        packet["packet_size"],
+
+
+        "Suspicious Packet"
 
     ))
+
+
 
     conn.commit()
 

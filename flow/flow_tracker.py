@@ -1,133 +1,150 @@
 """
-====================================================
+=========================================================
 Network Intrusion Detection System (NIDS)
 
 Module : Flow Tracker
 
-Creates and manages network flows.
+Tracks bidirectional network flows.
 
-====================================================
+=========================================================
 """
 
 
 from datetime import datetime
 
 
-
-import flow.flow_statistics as flow_stats
+from config import FLOW_TIMEOUT
 
 
 from flow.flow import Flow
 
 
-from config import FLOW_TIMEOUT
+
+
+
+active_flows = {}
+
+completed_flows = {}
 
 
 
 
 
-# ==================================================
-# Remove Expired Flows
-# ==================================================
-
-def cleanup_flows():
+# =====================================================
+# Generate Flow ID
+# =====================================================
 
 
-    current_time = datetime.now()
+def generate_flow_id(packet):
 
 
-
-    expired = []
+    protocol = packet["protocol"]
 
 
 
-    for key, flow in flow_stats.active_flows.items():
+    # ARP has no ports
+
+    if protocol == "ARP":
 
 
-        idle = (
+        hosts = sorted([
 
-            current_time -
+            packet["src_ip"],
 
-            flow.last_seen
+            packet["dst_ip"]
 
-        ).total_seconds()
-
-
-
-        if idle >= FLOW_TIMEOUT:
+        ])
 
 
-            expired.append(key)
+        return (
 
+            f"{hosts[0]}-"
 
+            f"{hosts[1]}-ARP"
 
-
-    for key in expired:
-
-
-        flow = flow_stats.active_flows.pop(key)
-
-
-
-        flow.close()
-
-
-
-        flow_stats.completed_flows.append(flow)
-
-
-
-        flow_stats.active_flow_count -= 1
-
-
-        flow_stats.completed_flow_count += 1
+        )
 
 
 
 
 
+    endpoint1 = (
 
-# ==================================================
-# Update Flow
-# ==================================================
+        packet["src_ip"],
 
-def update_flow(packet_info):
+        packet.get("src_port",0)
 
-
-    cleanup_flows()
+    )
 
 
+    endpoint2 = (
 
-    key = (
+        packet["dst_ip"],
 
-        packet_info["src_ip"],
+        packet.get("dst_port",0)
 
-        packet_info["dst_ip"],
+    )
 
-        packet_info["src_port"],
 
-        packet_info["dst_port"],
 
-        packet_info["protocol"]
+    endpoints = sorted([
+
+        endpoint1,
+
+        endpoint2
+
+    ])
+
+
+
+
+    return (
+
+        f"{endpoints[0][0]}:"
+
+        f"{endpoints[0][1]}-"
+
+        f"{endpoints[1][0]}:"
+
+        f"{endpoints[1][1]}-"
+
+        f"{protocol}"
 
     )
 
 
 
 
+
+
+
+# =====================================================
+# Update Flow
+# =====================================================
+
+
+def update_flow(packet):
+
+
+    flow_id = generate_flow_id(packet)
+
+
+
+    now = datetime.now()
+
+
+
+
+
     # Existing flow
 
-    if key in flow_stats.active_flows:
+    if flow_id in active_flows:
 
 
-        flow = flow_stats.active_flows[key]
+        flow = active_flows[flow_id]
 
 
-        flow.update(
-
-            packet_info["packet_size"]
-
-        )
+        flow.update(packet)
 
 
         return flow
@@ -135,71 +152,47 @@ def update_flow(packet_info):
 
 
 
+
     # New flow
-
-
-    flow_stats.total_flows += 1
-
-
-    flow_stats.active_flow_count += 1
-
-
 
 
     flow = Flow(
 
+        flow_id,
 
-        flow_id=
+        packet["src_ip"],
 
-        f"FLOW-{flow_stats.total_flows:05}",
+        packet["dst_ip"],
 
+        packet.get("src_port",0),
 
+        packet.get("dst_port",0),
 
-        src_ip=packet_info["src_ip"],
-
-
-        dst_ip=packet_info["dst_ip"],
-
-
-        src_port=packet_info["src_port"],
-
-
-        dst_port=packet_info["dst_port"],
-
-
-        protocol=packet_info["protocol"],
-
-
-        packet_size=packet_info["packet_size"]
+        packet["protocol"]
 
     )
 
 
 
-
-    flow_stats.active_flows[key] = flow
-
+    flow.packet_count = 1
 
 
+    flow.bytes = packet.get(
 
-    # Statistics
+        "packet_size",
+
+        0
+
+    )
 
 
-    flow_stats.source_counter[
-        flow.src_ip
-    ] += 1
+    flow.start_time = now
 
-
-
-    flow_stats.destination_counter[
-        flow.dst_ip
-    ] += 1
+    flow.last_seen = now
 
 
 
-    flow_stats.protocol_counter[
-        flow.protocol
-    ] += 1
+    active_flows[flow_id] = flow
 
 
 
@@ -209,35 +202,155 @@ def update_flow(packet_info):
 
 
 
+# =====================================================
+# Cleanup
+# =====================================================
 
-# ==================================================
-# Helper Functions
-# ==================================================
+
+def cleanup_flows():
+
+
+    now = datetime.now()
+
+
+    expired=[]
+
+
+
+
+    for flow_id,flow in active_flows.items():
+
+
+        idle = (
+
+            now -
+
+            flow.last_seen
+
+        ).total_seconds()
+
+
+
+
+        if idle >= FLOW_TIMEOUT:
+
+
+            flow.close()
+
+
+            completed_flows[flow_id]=flow
+
+
+            expired.append(flow_id)
+
+
+
+
+    for flow_id in expired:
+
+
+        del active_flows[flow_id]
+
+
+
+
+
+
+
+# =====================================================
+# Statistics
+# =====================================================
+
 
 def get_total_flow_count():
 
-    return flow_stats.total_flows
+    return (
+
+        len(active_flows)
+
+        +
+
+        len(completed_flows)
+
+    )
+
+
 
 
 
 def get_active_flow_count():
 
-    return flow_stats.active_flow_count
+    return len(active_flows)
+
+
 
 
 
 def get_completed_flow_count():
 
-    return flow_stats.completed_flow_count
+    return len(completed_flows)
 
 
 
-def get_active_flows():
 
-    return flow_stats.active_flows
 
 
 
 def get_completed_flows():
 
-    return flow_stats.completed_flows
+    return list(
+
+        completed_flows.values()
+
+    )
+
+
+
+
+
+
+
+def remove_completed_flow(flow_id):
+
+
+    if flow_id in completed_flows:
+
+        del completed_flows[flow_id]
+
+
+
+
+
+
+
+def get_all_flows():
+
+
+    return (
+
+        list(active_flows.values())
+
+        +
+
+        list(completed_flows.values())
+
+    )
+
+
+
+
+
+
+
+# =====================================================
+# Reset
+# =====================================================
+
+
+def reset_flows():
+
+
+    active_flows.clear()
+
+
+    completed_flows.clear()

@@ -1,90 +1,39 @@
 """
-====================================================
+=========================================================
 Network Intrusion Detection System (NIDS)
 
 Module : Console Manager
 
-Displays:
-- Startup
-- Live Status
-- Alerts
+Displays
 
-====================================================
+1. Live Status
+2. New Attack Alerts
+3. Attack Progress
+4. Attack Finished
+5. Session Summary
+
+=========================================================
 """
 
-
-import detection.statistics as stats
-
+from datetime import datetime
 
 
-
-
-# ==========================================
-# Startup Display
-# ==========================================
-
-def display_startup(interface):
-
-
-    print("\n")
-
-
-    print("="*60)
-
-    print(
-        "      NETWORK INTRUSION DETECTION SYSTEM"
-    )
-
-    print("="*60)
-
-
-
-    print(
-        f"Monitoring Interface : {interface}"
-    )
-
-
-    print(
-        "Status : Monitoring Network"
-    )
-
-
-    print(
-        "Press CTRL+C to stop"
-    )
-
-
-    print("="*60)
-
-
-
-
-
-
-
-# ==========================================
+# ==========================================================
 # Live Status
-# ==========================================
+# ==========================================================
 
-def display_live_status():
-
-
-    alerts = stats.status_counter["ALERT"]
-
-
-    warnings = stats.status_counter["WARNING"]
-
+def display_live_status(stats):
 
 
     print(
 
-        f"\rPackets : {stats.total_packets:<8}"
+        f"\rPackets : {stats.get('packets',0)} | "
 
-        f" Alerts : {alerts:<5}"
+        f"Alerts : {stats.get('alerts',0)} | "
 
-        f" Warnings : {warnings:<5}"
+        f"Warnings : {stats.get('warnings',0)} | "
 
-        f" Risk : {stats.calculate_risk()}",
+        f"Risk : {stats.get('risk','LOW')}",
 
         end="",
 
@@ -93,64 +42,176 @@ def display_live_status():
     )
 
 
+# ==========================================================
+# New Attack
+# ==========================================================
 
-
-
-
-
-
-# ==========================================
-# Alert Display
-# ==========================================
-
-def display_alert(packet_info,result):
-
+def display_alert(packet, attack):
 
     print("\n")
 
-    print("="*60)
+    print("=" * 65)
+
+    print("🚨  NEW ATTACK DETECTED")
+
+    print("=" * 65)
+
+    print(f"Attack Type     : {attack['attack_type']}")
+
+    print(f"Severity        : {attack['severity']}")
+
+    print(f"Source          : {attack['source_ip']}")
+
+    print(f"Destination     : {attack['destination_ip']}")
+
+    print(f"Protocol        : {packet['protocol']}")
+
+    print(f"Started         : {attack['start_time']}")
+
+    print("=" * 65)
+
+
+# ==========================================================
+# Attack Continuing
+# ==========================================================
+
+def display_attack_progress(attack):
 
     print(
-        "              🚨 NETWORK ALERT 🚨"
-    )
 
-    print("="*60)
+        f"\r{attack['attack_type']} "
 
+        f"continuing... "
 
+        f"Packets : {attack['packet_count']}",
 
-    print(
-        f"Time : {packet_info['timestamp']}"
-    )
+        end="",
 
+        flush=True
 
-    print(
-        f"Source IP : {packet_info['src_ip']}"
-    )
-
-
-    print(
-        f"Destination IP : {packet_info['dst_ip']}"
-    )
-
-
-    print(
-        f"Protocol : {packet_info['protocol']}"
-    )
-
-
-    print(
-        f"Severity : {result['severity']}"
-    )
-
-
-    print(
-        f"Attack : {result['attack']}"
-    )
-
-
-    print(
-        f"Reason : {result['reason']}"
     )
 
 
-    print("="*60)
+# ==========================================================
+# Attack Finished
+# ==========================================================
+
+def display_finished_attack(attack):
+
+    print("\n")
+
+    print("=" * 65)
+
+    print("✓ ATTACK FINISHED")
+
+    print("=" * 65)
+
+    print(f"Attack Type     : {attack['attack_type']}")
+
+    print(f"Severity        : {attack['severity']}")
+
+    print(f"Source          : {attack['source_ip']}")
+
+    print(f"Destination     : {attack['destination_ip']}")
+
+    print(f"Duration        : {attack['duration']:.2f} sec")
+
+    print(f"Packets         : {attack['packet_count']}")
+
+    if attack.get("details"):
+
+        print("\nDetails")
+
+        for key, value in attack["details"].items():
+
+            print(f"{key:20}: {value}")
+
+    print("=" * 65)
+
+
+# ==========================================================
+# Overall Session Summary
+# ==========================================================
+
+def display_session_summary(summary):
+
+    print("\n")
+
+    print("=" * 70)
+
+    print("SESSION SUMMARY")
+
+    print("=" * 70)
+
+    print(f"Session ID          : {summary['session_id']}")
+
+    print(f"Start Time          : {summary['start_time']}")
+
+    print(f"End Time            : {summary['end_time']}")
+
+    print(f"Duration            : {summary['duration']:.2f} sec")
+
+    print(f"Packets             : {summary['packets']}")
+
+    print(f"Flows               : {summary['flows']}")
+
+    print(f"Alerts              : {summary['alerts']}")
+
+    print(f"Warnings            : {summary['warnings']}")
+
+    print(f"Highest Risk        : {summary['risk']}")
+
+    print(f"Unique Attacks      : {summary['unique_attacks']}")
+
+    print("=" * 70)
+
+
+# ==========================================================
+# Attack History
+# ==========================================================
+
+def display_attack_history(attacks):
+
+    if not attacks:
+
+        print("\nNo attacks detected.")
+
+        return
+
+    print("\n")
+
+    print("=" * 70)
+
+    print("ATTACK HISTORY")
+
+    print("=" * 70)
+
+    for attack in attacks:
+
+        print()
+
+        print(f"Attack ID      : {attack['alert_id']}")
+
+        print(f"Type           : {attack['attack_type']}")
+
+        print(f"Severity       : {attack['severity']}")
+
+        print(f"Source         : {attack['source_ip']}")
+
+        print(f"Destination    : {attack['destination_ip']}")
+
+        print(f"Packets        : {attack['packets']}")
+
+        print(f"Start          : {attack['start_time']}")
+
+        print(f"End            : {attack['end_time']}")
+
+        if attack.get("details"):
+
+            print("\nDetails")
+
+            for key, value in attack["details"].items():
+
+                print(f"   {key:20}: {value}")
+
+        print("-" * 70)

@@ -4,10 +4,8 @@ Network Intrusion Detection System (NIDS)
 
 Module : Packet Capture
 
-Description:
-Captures live network packets using Scapy,
-extracts required packet information,
-and forwards packets to Analyzer Module.
+Captures live network traffic and forwards
+packet information to Analyzer.
 
 ====================================================
 """
@@ -17,68 +15,97 @@ from datetime import datetime
 
 
 from scapy.all import (
+
     sniff,
+
     IP,
+
     TCP,
+
     UDP,
+
     ICMP,
+
+    ARP,
+
     get_if_list
+
 )
+
 
 
 from analyzer.analyzer import analyze_packet
 
 
-from console.console_manager import display_startup
 
+from session.session_manager import (
 
-from config import (
-    STORE_PACKETS,
-    DEFAULT_INTERFACE
+    start_session,
+
+    stop_session,
+
+    get_session_summary,
+
+    get_attack_summary
+
 )
 
 
 
+from database.database import create_database
+
+
+
+from console.console_manager import (
+
+    display_session_summary,
+
+    display_attack_history
+
+)
+
+
+
+
+
 # ==================================================
-# Display Network Interfaces
+# Show Interfaces
 # ==================================================
 
-def display_interfaces():
+def show_interfaces():
+
 
     interfaces = get_if_list()
 
 
-    print("\nAvailable Network Interfaces\n")
+
+    print("\n")
+
+    print("=" * 60)
+
+    print("Available Network Interfaces")
+
+    print("=" * 60)
+
 
 
     for index, interface in enumerate(
+
         interfaces,
+
         start=1
+
     ):
 
         print(
+
             f"{index}. {interface}"
+
         )
 
 
-    return interfaces
 
-
-
-
-# ==================================================
-# Select Interface
-# ==================================================
-
-def select_interface():
-
-    if DEFAULT_INTERFACE:
-
-        return DEFAULT_INTERFACE
-
-
-
-    interfaces = display_interfaces()
+    print()
 
 
 
@@ -89,156 +116,303 @@ def select_interface():
 
 
             choice = int(
+
                 input(
-                    "\nSelect Interface : "
+
+                    "Select Interface : "
+
                 )
+
             )
+
 
 
             if 1 <= choice <= len(interfaces):
 
+
                 return interfaces[choice-1]
+
 
 
             else:
 
+
                 print(
-                    "Invalid Selection"
+
+                    "Invalid Interface"
+
                 )
+
 
 
         except ValueError:
 
 
             print(
+
                 "Enter a valid number"
+
             )
 
 
 
 
 
+
+
 # ==================================================
-# Packet Processing
+# Extract Packet Information
 # ==================================================
 
 def process_packet(packet):
 
 
-    # Ignore non-IP packets
+    try:
 
-    if IP not in packet:
 
-        return
 
+        packet_info = {
 
 
-    timestamp = datetime.now()
+            "timestamp":
 
+                datetime.now(),
 
 
-    src_ip = packet[IP].src
 
-    dst_ip = packet[IP].dst
+            "src_ip":
 
+                "",
 
 
-    protocol = "OTHER"
 
+            "dst_ip":
 
+                "",
 
-    src_port = None
 
-    dst_port = None
 
+            "src_port":
 
+                0,
 
 
-    # -----------------------------
-    # TCP
-    # -----------------------------
 
-    if TCP in packet:
+            "dst_port":
 
+                0,
 
-        protocol = "TCP"
 
 
-        src_port = packet[TCP].sport
+            "protocol":
 
-        dst_port = packet[TCP].dport
+                "",
 
 
 
+            "packet_size":
 
-    # -----------------------------
-    # UDP
-    # -----------------------------
+                len(packet),
 
-    elif UDP in packet:
 
 
-        protocol = "UDP"
+            "flags":
 
+                ""
 
-        src_port = packet[UDP].sport
+        }
 
-        dst_port = packet[UDP].dport
 
 
 
 
-    # -----------------------------
-    # ICMP
-    # -----------------------------
 
-    elif ICMP in packet:
 
+        # ==========================================
+        # ARP Traffic
+        # ==========================================
 
-        protocol = "ICMP"
 
+        if ARP in packet:
 
 
 
-    packet_info = {
+            packet_info["protocol"] = "ARP"
 
 
-        "timestamp":
-            timestamp,
 
+            packet_info["src_ip"] = packet[ARP].psrc
 
-        "src_ip":
-            src_ip,
 
+            packet_info["dst_ip"] = packet[ARP].pdst
 
-        "dst_ip":
-            dst_ip,
 
 
-        "protocol":
-            protocol,
+            analyze_packet(
 
+                packet_info
 
-        "src_port":
-            src_port,
+            )
 
 
-        "dst_port":
-            dst_port,
+            return
 
 
-        "packet_size":
-            len(packet)
 
-    }
 
 
 
-    # Send packet for analysis
 
-    analyze_packet(
-        packet_info
-    )
+        # ==========================================
+        # IP Traffic
+        # ==========================================
+
+
+        if IP not in packet:
+
+
+            return
+
+
+
+
+
+        packet_info["src_ip"] = packet[IP].src
+
+
+        packet_info["dst_ip"] = packet[IP].dst
+
+
+
+
+
+
+
+        # ==========================================
+        # TCP
+        # ==========================================
+
+
+        if TCP in packet:
+
+
+
+            packet_info["protocol"] = "TCP"
+
+
+
+            packet_info["src_port"] = packet[TCP].sport
+
+
+            packet_info["dst_port"] = packet[TCP].dport
+
+
+
+            # Required for:
+            #
+            # SYN Scan
+            # FIN Scan
+            # NULL Scan
+            # XMAS Scan
+
+
+            packet_info["flags"] = str(
+
+                packet[TCP].flags
+
+            )
+
+
+
+
+
+
+
+        # ==========================================
+        # UDP
+        # ==========================================
+
+
+        elif UDP in packet:
+
+
+
+            packet_info["protocol"] = "UDP"
+
+
+
+            packet_info["src_port"] = packet[UDP].sport
+
+
+            packet_info["dst_port"] = packet[UDP].dport
+
+
+
+
+
+
+
+        # ==========================================
+        # ICMP
+        # ==========================================
+
+
+        elif ICMP in packet:
+
+
+
+            packet_info["protocol"] = "ICMP"
+
+
+
+            packet_info["icmp_type"] = packet[ICMP].type
+
+
+            packet_info["icmp_code"] = packet[ICMP].code
+
+
+
+
+
+        else:
+
+
+            return
+
+
+
+
+
+        # ==========================================
+        # Send to Analyzer
+        # ==========================================
+
+
+        analyze_packet(
+
+            packet_info
+
+        )
+
+
+
+
+
+
+    except Exception as error:
+
+
+
+        print(
+
+            "\n[CAPTURE ERROR]",
+
+            error
+
+        )
+
+
+
 
 
 
@@ -251,22 +425,122 @@ def process_packet(packet):
 def start_capture():
 
 
-    interface = select_interface()
+    # Initialize DB
+
+    create_database()
 
 
 
-    display_startup(
-        interface
+    interface = show_interfaces()
+
+
+
+    start_session()
+
+
+
+
+
+    print("\n")
+
+    print("=" * 65)
+
+    print("NETWORK INTRUSION DETECTION SYSTEM")
+
+    print("=" * 65)
+
+
+
+    print(
+
+        f"Listening Interface : {interface}"
+
     )
 
 
+    print(
 
-    sniff(
-
-        iface=interface,
-
-        prn=process_packet,
-
-        store=STORE_PACKETS
+        "Promiscuous Mode    : ENABLED"
 
     )
+
+
+    print(
+
+        "Press CTRL + C to stop"
+
+    )
+
+
+    print("=" * 65)
+
+
+
+
+
+
+
+    try:
+
+
+
+        sniff(
+
+
+            iface=interface,
+
+
+
+            prn=process_packet,
+
+
+
+            store=False,
+
+
+
+            promisc=True
+
+
+        )
+
+
+
+
+
+
+    except KeyboardInterrupt:
+
+
+
+        print("\n")
+
+        print(
+
+            "Stopping IDS..."
+
+        )
+
+
+
+        stop_session()
+
+
+
+        print("\n")
+
+
+
+        display_session_summary(
+
+            get_session_summary()
+
+        )
+
+
+
+        display_attack_history(
+
+            get_attack_summary()
+
+        )

@@ -4,30 +4,49 @@ Network Intrusion Detection System (NIDS)
 
 Module : Packet Analyzer
 
-Connects:
-- Flow Tracking
-- Detection Engine
-- Session Tracking
-- Statistics Engine
-- Console Output
+Pipeline
+
+Packet
+   |
+   ↓
+Flow Tracker
+   |
+   ↓
+Detection Engine
+   |
+   ↓
+Session Manager
+   |
+   ↓
+Database
+   |
+   ↓
+Alert System
+
 
 ====================================================
 """
 
 
 # ==================================================
-# Flow Tracking
+# Flow Tracker
 # ==================================================
 
 from flow.flow_tracker import (
 
     update_flow,
 
+    cleanup_flows,
+
     get_total_flow_count,
 
     get_active_flow_count,
 
-    get_completed_flow_count
+    get_completed_flow_count,
+
+    get_completed_flows,
+
+    remove_completed_flow
 
 )
 
@@ -39,28 +58,23 @@ from flow.flow_tracker import (
 from detection.detection import detect
 
 
-# ==================================================
-# Statistics Engine
-# ==================================================
-
-from detection.statistics import update_statistics
-
 
 # ==================================================
-# Console Output
+# Statistics
 # ==================================================
 
-from console.console_manager import (
+from detection.statistics import (
 
-    display_live_status,
+    update_packet_count,
 
-    display_alert
+    get_statistics
 
 )
 
 
+
 # ==================================================
-# Session Management
+# Session Manager
 # ==================================================
 
 from session.session_manager import (
@@ -69,96 +83,338 @@ from session.session_manager import (
 
     update_flows,
 
-    update_alert,
+    update_attack,
 
-    update_risk
+    update_attack_packet,
+
+    finish_attack,
+
+    update_risk,
+
+    get_current_session
 
 )
 
 
-# ==================================================
-# Packet Counter
-# ==================================================
-
-packet_id = 0
-
 
 # ==================================================
-# Packet Analyzer
+# Database
 # ==================================================
 
-def analyze_packet(packet_info):
+from database.database import (
 
-    global packet_id
+    save_alert,
 
-    packet_id += 1
+    save_flow,
 
-    # ==========================================
-    # 1. FLOW UPDATE
-    # ==========================================
+    save_suspicious_packet
 
-    flow = update_flow(packet_info)
+)
 
-    packet_info["flow_id"] = flow.flow_id
 
-    # ==========================================
-    # 2. SESSION UPDATE
-    # ==========================================
 
-    update_packet()
+# ==================================================
+# Console
+# ==================================================
 
-    update_flows(
+from console.console_manager import (
 
-        get_total_flow_count(),
+    display_alert,
 
-        get_active_flow_count(),
+    display_attack_progress,
 
-        get_completed_flow_count()
+    display_finished_attack,
 
-    )
+    display_live_status
 
-    # ==========================================
-    # 3. DETECTION
-    # ==========================================
+)
 
-    result = detect(packet_info)
 
-    # ==========================================
-    # 4. STATISTICS UPDATE
-    # ==========================================
 
-    update_statistics(
 
-        packet_info,
 
-        result
+# ==================================================
+# Analyze Packet
+# ==================================================
 
-    )
+def analyze_packet(packet):
 
-    # ==========================================
-    # 5. ALERT HANDLING
-    # ==========================================
 
-    if result["status"] == "ALERT":
+    try:
 
-        update_alert()
 
-        update_risk(
+        # ==========================================
+        # Packet Count
+        # ==========================================
 
-            result["severity"]
+        update_packet_count()
+
+        update_packet()
+
+
+
+        # ==========================================
+        # Flow Tracking
+        # ==========================================
+
+        flow = update_flow(packet)
+
+
+        packet["flow_id"] = flow.flow_id
+
+
+
+        # Cleanup expired flows
+
+        cleanup_flows()
+
+
+
+        # ==========================================
+        # Update Flow Statistics
+        # ==========================================
+
+        update_flows(
+
+            get_total_flow_count(),
+
+            get_active_flow_count(),
+
+            get_completed_flow_count()
 
         )
 
-        display_alert(
 
-            packet_info,
 
-            result
+        # ==========================================
+        # Detection Engine
+        # ==========================================
+
+        result = detect(packet)
+
+
+
+        session = get_current_session()
+
+
+
+        # ==========================================
+        # Live Status
+        # Only display when alert happens
+        # ==========================================
+
+        if result["status"] == "ALERT":
+
+
+            display_live_status(
+
+                get_statistics()
+
+            )
+
+
+
+        # ==========================================
+        # Handle Active Alerts
+        # ==========================================
+
+
+        for event in result["alerts"]:
+
+
+            attack = event["attack"]
+
+
+
+            # ----------------------------------
+            # New Attack
+            # ----------------------------------
+
+            if event["status"] == "STARTED":
+
+
+
+                update_attack(
+
+                    attack
+
+                )
+
+
+                update_risk(
+
+                    attack["severity"]
+
+                )
+
+
+
+                display_alert(
+
+                    packet,
+
+                    attack
+
+                )
+
+
+
+                if session:
+
+
+
+                    save_alert(
+
+                        session.session_id,
+
+                        attack
+
+                    )
+
+
+                    save_suspicious_packet(
+
+                        session.session_id,
+
+                        attack["alert_id"],
+
+                        packet
+
+                    )
+
+
+
+
+
+            # ----------------------------------
+            # Existing Attack
+            # ----------------------------------
+
+            elif event["status"] == "ONGOING":
+
+
+
+                attack_key = (
+
+                    attack["source_ip"],
+
+                    attack["attack_type"]
+
+                )
+
+
+                update_attack_packet(
+
+                    attack_key
+
+                )
+
+
+                display_attack_progress(
+
+                    attack
+
+                )
+
+
+
+
+
+        # ==========================================
+        # Finished Attacks
+        # ==========================================
+
+
+        for attack in result["finished"]:
+
+
+            finish_attack(
+
+                attack
+
+            )
+
+
+            display_finished_attack(
+
+                attack
+
+            )
+
+
+
+
+
+        # ==========================================
+        # Save Completed Flows
+        # ==========================================
+
+
+        if session:
+
+
+            completed = get_completed_flows()
+
+
+
+            for flow in completed:
+
+
+
+                save_flow(
+
+                    session.session_id,
+
+                    flow
+
+                )
+
+
+                remove_completed_flow(
+
+                    flow.flow_id
+
+                )
+
+
+
+
+
+        return result
+
+
+
+
+
+    except Exception as error:
+
+
+
+        print(
+
+            "\n[ANALYZER ERROR]",
+
+            error
 
         )
 
-    else:
 
-        display_live_status()
 
-    return result
+        return {
+
+
+            "status":
+
+            "ERROR",
+
+
+            "alerts":
+
+            [],
+
+
+            "finished":
+
+            []
+
+        }

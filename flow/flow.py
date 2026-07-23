@@ -1,13 +1,12 @@
 """
-====================================================
+=========================================================
 Network Intrusion Detection System (NIDS)
 
 Module : Flow Object
 
-Description:
-Represents one network communication flow.
+Represents one bidirectional network communication flow.
 
-====================================================
+=========================================================
 """
 
 
@@ -19,14 +18,21 @@ class Flow:
 
 
     def __init__(
+
         self,
+
         flow_id,
+
         src_ip,
+
         dst_ip,
+
         src_port,
+
         dst_port,
-        protocol,
-        packet_size
+
+        protocol
+
     ):
 
 
@@ -49,33 +55,39 @@ class Flow:
 
         # Statistics
 
-        self.packet_count = 1
+        self.packet_count = 0
 
-        self.bytes = packet_size
+        self.bytes = 0
 
 
 
         self.start_time = datetime.now()
 
-        self.last_seen = self.start_time
-
+        self.last_seen = datetime.now()
 
         self.end_time = None
+
+
+        self.duration = 0
+
 
 
         self.status = "ACTIVE"
 
 
 
-        self.duration = 0
+        # Traffic direction
 
-        self.average_packet_size = packet_size
+        self.forward_packets = 0
+
+        self.reverse_packets = 0
 
 
 
-        self.packet_rate = 0
+        # TCP state
 
-        self.byte_rate = 0
+        self.tcp_state = "UNKNOWN"
+
 
 
 
@@ -84,77 +96,75 @@ class Flow:
     # Update Flow
     # ==========================================
 
-    def update(self, packet_size):
+    def update(self, packet):
 
 
         self.packet_count += 1
 
 
-        self.bytes += packet_size
+        self.bytes += packet.get(
+
+            "packet_size",
+
+            0
+
+        )
 
 
         self.last_seen = datetime.now()
 
 
-        self.calculate_statistics()
+
+        self.update_tcp_state(packet)
+
 
 
 
 
     # ==========================================
-    # Calculate Statistics
+    # TCP State Tracking
     # ==========================================
 
-    def calculate_statistics(self):
+    def update_tcp_state(self, packet):
 
 
-        duration = (
+        if self.protocol != "TCP":
 
-            self.last_seen -
-
-            self.start_time
-
-        ).total_seconds()
+            return
 
 
 
-        if duration <= 0:
+        flags = packet.get(
 
-            duration = 1
+            "flags",
 
-
-
-        self.duration = duration
-
-
-
-        self.average_packet_size = (
-
-            self.bytes /
-
-            self.packet_count
+            ""
 
         )
 
 
 
-        self.packet_rate = (
+        if flags == "S":
 
-            self.packet_count /
-
-            duration
-
-        )
+            self.tcp_state = "SYN"
 
 
 
-        self.byte_rate = (
+        elif "SA" in flags:
 
-            self.bytes /
+            self.tcp_state = "ESTABLISHED"
 
-            duration
 
-        )
+
+        elif "F" in flags:
+
+            self.tcp_state = "FIN"
+
+
+
+        elif "R" in flags:
+
+            self.tcp_state = "RESET"
 
 
 
@@ -170,17 +180,25 @@ class Flow:
         self.end_time = datetime.now()
 
 
+
+        self.duration = (
+
+            self.end_time -
+
+            self.start_time
+
+        ).total_seconds()
+
+
+
         self.status = "COMPLETED"
-
-
-        self.calculate_statistics()
 
 
 
 
 
     # ==========================================
-    # Dictionary Conversion
+    # Database Format
     # ==========================================
 
     def to_dict(self):
@@ -213,7 +231,7 @@ class Flow:
                 self.protocol,
 
 
-            "packet_count":
+            "packets":
                 self.packet_count,
 
 
@@ -225,8 +243,11 @@ class Flow:
                 self.duration,
 
 
+            "tcp_state":
+                self.tcp_state,
+
+
             "status":
                 self.status
-
 
         }

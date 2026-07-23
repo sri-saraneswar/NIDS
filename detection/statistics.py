@@ -1,99 +1,294 @@
 """
-====================================================
-Detection Statistics
+=========================================================
+Network Intrusion Detection System (NIDS)
 
-Maintains IDS statistics.
+Module : Detection Statistics
 
-====================================================
+Stores runtime IDS statistics.
+
+=========================================================
 """
 
 
-from collections import Counter
+statistics = {
+
+
+    "packets":0,
+
+
+    "alerts":0,
+
+
+    "warnings":0,
+
+
+    "risk":"LOW",
+
+
+    "high":0,
+
+
+    "medium":0,
+
+
+    "low":0,
+
+
+    "critical":0,
+
+
+    "attack_types":{},
+
+
+    "top_attackers":{},
+
+
+    "top_targets":{}
+
+}
 
 
 
-from config import (
-    HIGH_ALERT_THRESHOLD,
-    CRITICAL_ALERT_THRESHOLD,
-    MEDIUM_WARNING_THRESHOLD
-)
 
 
-
-total_packets = 0
-
-
-status_counter = Counter()
+# =====================================================
+# Packet Counter
+# =====================================================
 
 
-protocol_counter = Counter()
+def update_packet_count():
 
 
-attack_counter = Counter()
-
-
-
-
-def update_statistics(packet_info,result):
-
-
-    global total_packets
-
-
-    total_packets += 1
-
-
-
-    status_counter[
-        result["status"]
-    ] += 1
-
-
-
-    protocol_counter[
-        packet_info["protocol"]
-    ] += 1
-
-
-
-    if result["attack"] != "None":
-
-
-        attack_counter[
-            result["attack"]
-        ] += 1
+    statistics["packets"] += 1
 
 
 
 
 
 
-def calculate_risk():
+
+# =====================================================
+# Update Attack Statistics
+# =====================================================
 
 
-    alerts = status_counter["ALERT"]
+def update_statistics(events):
 
 
-    warnings = status_counter["WARNING"]
+    levels = {
 
 
+        "LOW":1,
 
-    if alerts >= CRITICAL_ALERT_THRESHOLD:
+        "MEDIUM":2,
 
-        return "CRITICAL"
+        "HIGH":3,
 
+        "CRITICAL":4
 
-
-    elif alerts >= HIGH_ALERT_THRESHOLD:
-
-        return "HIGH"
-
-
-
-    elif warnings >= MEDIUM_WARNING_THRESHOLD:
-
-        return "MEDIUM"
+    }
 
 
 
-    return "LOW"
+
+
+    for event in events:
+
+
+
+        if event["status"] != "STARTED":
+
+            continue
+
+
+
+
+        attack = event["attack"]
+
+
+
+        severity = attack["severity"]
+
+
+
+
+
+        statistics["alerts"] += 1
+
+
+
+
+
+        # Severity count
+
+
+        if severity == "LOW":
+
+            statistics["low"] += 1
+
+
+
+        elif severity == "MEDIUM":
+
+            statistics["medium"] += 1
+
+
+
+        elif severity == "HIGH":
+
+            statistics["high"] += 1
+
+
+
+        elif severity == "CRITICAL":
+
+            statistics["critical"] += 1
+
+
+
+
+
+        # Highest risk
+
+
+        if levels[severity] > levels[statistics["risk"]]:
+
+            statistics["risk"] = severity
+
+
+
+
+
+        # Attack types
+
+
+        name = attack["attack_type"]
+
+
+
+        statistics["attack_types"].setdefault(
+
+            name,
+
+            0
+
+        )
+
+
+
+        statistics["attack_types"][name]+=1
+
+
+
+
+
+        # Top attacker
+
+
+        attacker = attack["source_ip"]
+
+
+
+        statistics["top_attackers"].setdefault(
+
+            attacker,
+
+            0
+
+        )
+
+
+        statistics["top_attackers"][attacker]+=1
+
+
+
+
+
+        # Target IP
+
+
+        target = attack["destination_ip"]
+
+
+
+        statistics["top_targets"].setdefault(
+
+            target,
+
+            0
+
+        )
+
+
+        statistics["top_targets"][target]+=1
+
+
+
+
+
+
+
+# =====================================================
+# Get Statistics
+# =====================================================
+
+
+def get_statistics():
+
+
+    return statistics
+
+
+
+
+
+
+
+# =====================================================
+# Reset
+# =====================================================
+
+
+def reset_statistics():
+
+
+    statistics.clear()
+
+
+
+    statistics.update({
+
+
+        "packets":0,
+
+
+        "alerts":0,
+
+
+        "warnings":0,
+
+
+        "risk":"LOW",
+
+
+        "high":0,
+
+
+        "medium":0,
+
+
+        "low":0,
+
+
+        "critical":0,
+
+
+        "attack_types":{},
+
+
+        "top_attackers":{},
+
+
+        "top_targets":{}
+
+    })

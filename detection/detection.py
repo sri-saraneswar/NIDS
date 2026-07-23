@@ -1,35 +1,120 @@
 """
-====================================================
-Network Intrusion Detection System
+=========================================================
+Network Intrusion Detection System (NIDS)
 
-Detection Controller
+Module : Detection Engine
 
-====================================================
+Pipeline:
+
+Packet
+ |
+ v
+Detection Rules
+ |
+ v
+Threshold Manager
+ |
+ v
+Statistics
+
+=========================================================
 """
 
 
-from detection.rules import detect_rules
+from detection.rules_manager import detect_attacks
 
 
-from detection.statistics import update_statistics
+from detection.threshold_manager import (
+
+    process_attacks,
+
+    cleanup_finished_attacks
+
+)
+
+
+from detection.statistics import (
+
+    update_statistics
+
+)
 
 
 
 
-def detect(packet_info):
+
+# =====================================================
+# Main Detection Function
+# =====================================================
 
 
-    result = detect_rules(packet_info)
+def detect(packet):
+
+
+    result = {
+
+
+        "alerts":[],
+
+        "finished":[]
+
+    }
 
 
 
-    update_statistics(
 
-        packet_info,
 
-        result
+    # ==========================================
+    # Run All Rules
+    # ==========================================
 
-    )
+
+    attacks = detect_attacks(packet)
+
+
+
+
+
+    if attacks:
+
+
+        events = process_attacks(
+
+            attacks
+
+        )
+
+
+
+        result["alerts"] = events
+
+
+
+        update_statistics(
+
+            events
+
+        )
+
+
+
+
+
+
+
+    # ==========================================
+    # Check Finished Attacks
+    # ==========================================
+
+
+    finished = cleanup_finished_attacks()
+
+
+
+    result["finished"] = finished
+
+
+
 
 
     return result
