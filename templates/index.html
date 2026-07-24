@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIDS Dashboard</title>
+    <!-- CSS styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts for sleek typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        
+        <!-- Header -->
+        <header class="header glass-panel">
+            <div class="logo">
+                <div class="logo-icon">🛡️</div>
+                <h1>NIDS <span class="dim-text">Real-Time Dashboard</span></h1>
+            </div>
+            <div class="status-container">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span id="session-status">System Active</span>
+                </div>
+                <div class="risk-badge" id="risk-badge">
+                    RISK: <span id="risk-level">LOW</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="grid-layout">
+            
+            <!-- Key Metrics Cards -->
+            <section class="metrics-row">
+                <div class="metric-card glass-panel">
+                    <h3>Total Packets</h3>
+                    <div class="metric-value" id="val-packets">0</div>
+                </div>
+                <div class="metric-card glass-panel">
+                    <h3>Total Traffic</h3>
+                    <div class="metric-value" id="val-bytes">0 B</div>
+                </div>
+                <div class="metric-card glass-panel">
+                    <h3>Security Alerts</h3>
+                    <div class="metric-value text-red" id="val-alerts">0</div>
+                </div>
+                <div class="metric-card glass-panel">
+                    <h3>Warnings</h3>
+                    <div class="metric-value text-yellow" id="val-warnings">0</div>
+                </div>
+            </section>
+
+            <!-- Charts and Tables -->
+            <div class="content-row">
+                
+                <!-- Left Column -->
+                <div class="col-left">
+                    
+                    <!-- Protocol Chart -->
+                    <div class="panel glass-panel">
+                        <h2>Protocol Distribution</h2>
+                        <div class="chart-container">
+                            <canvas id="protocolChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Top Hosts -->
+                    <div class="panel glass-panel">
+                        <h2>Top Communicating Hosts</h2>
+                        <div class="table-container">
+                            <table class="data-table" id="hosts-table">
+                                <thead>
+                                    <tr>
+                                        <th>IP Address</th>
+                                        <th class="text-right">Packets</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic content -->
+                                    <tr><td colspan="2" class="text-center dim-text">Waiting for traffic...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <!-- Right Column -->
+                <div class="col-right">
+                    
+                    <!-- Active Attacks -->
+                    <div class="panel glass-panel border-red">
+                        <h2>Active Threats <span class="badge" id="badge-active">0</span></h2>
+                        <div class="attack-list" id="active-attacks-list">
+                            <!-- Dynamic content -->
+                            <div class="empty-state">No active threats detected.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Attack History -->
+                    <div class="panel glass-panel">
+                        <h2>Attack History</h2>
+                        <div class="table-container full-height">
+                            <table class="data-table" id="attacks-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Type</th>
+                                        <th>Severity</th>
+                                        <th>Target</th>
+                                        <th>Packets</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic content -->
+                                    <tr><td colspan="5" class="text-center dim-text">No attacks recorded yet.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
+        </main>
+    </div>
+    
+    <!-- Application Logic -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

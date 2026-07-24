@@ -4,25 +4,32 @@ Network Intrusion Detection System (NIDS)
 
 Module : Packet Analyzer
 
-Pipeline
+Central analysis pipeline.
 
-Packet
-   |
-   ↓
-Flow Tracker
-   |
-   ↓
-Detection Engine
-   |
-   ↓
-Session Manager
-   |
-   ↓
-Database
-   |
-   ↓
-Alert System
+Pipeline:
 
+    Packet
+       |
+       v
+    Statistics
+       |
+       v
+    Flow Tracker
+       |
+       v
+    Detection Engine
+       |
+       v
+    Session Manager
+       |
+       v
+    Alert Manager
+       |
+       v
+    Console Display
+       |
+       v
+    Database
 
 ====================================================
 """
@@ -58,7 +65,6 @@ from flow.flow_tracker import (
 from detection.detection import detect
 
 
-
 # ==================================================
 # Statistics
 # ==================================================
@@ -67,10 +73,13 @@ from detection.statistics import (
 
     update_packet_count,
 
+    update_protocol,
+
+    update_host_traffic,
+
     get_statistics
 
 )
-
 
 
 # ==================================================
@@ -80,6 +89,8 @@ from detection.statistics import (
 from session.session_manager import (
 
     update_packet,
+
+    update_protocol as session_update_protocol,
 
     update_flows,
 
@@ -96,7 +107,6 @@ from session.session_manager import (
 )
 
 
-
 # ==================================================
 # Database
 # ==================================================
@@ -110,7 +120,6 @@ from database.database import (
     save_suspicious_packet
 
 )
-
 
 
 # ==================================================
@@ -130,6 +139,28 @@ from console.console_manager import (
 )
 
 
+# ==================================================
+# Alert Manager (Popup)
+# ==================================================
+
+_alert_manager = None
+
+
+def set_alert_manager(manager):
+    """
+    Set the global alert manager reference.
+
+    Called from app.py during initialization.
+
+    Args:
+        manager: AlertManager instance.
+    """
+
+    global _alert_manager
+
+    _alert_manager = manager
+
+
 
 
 
@@ -137,14 +168,33 @@ from console.console_manager import (
 # Analyze Packet
 # ==================================================
 
+
 def analyze_packet(packet):
+    """
+    Main analysis pipeline for each captured packet.
+
+    Steps:
+        1. Update packet statistics
+        2. Update protocol and byte tracking
+        3. Update host traffic
+        4. Track network flow
+        5. Run detection engine
+        6. Handle attack events
+        7. Save completed flows
+
+    Args:
+        packet: Dictionary with packet metadata.
+
+    Returns:
+        Detection result dictionary.
+    """
 
 
     try:
 
 
         # ==========================================
-        # Packet Count
+        # Packet Statistics
         # ==========================================
 
         update_packet_count()
@@ -154,14 +204,44 @@ def analyze_packet(packet):
 
 
         # ==========================================
+        # Protocol and Byte Tracking
+        # ==========================================
+
+        protocol = packet.get("protocol", "")
+
+        packet_size = packet.get("packet_size", 0)
+
+
+        update_protocol(
+            protocol,
+            packet_size
+        )
+
+        session_update_protocol(
+            protocol,
+            packet_size
+        )
+
+
+
+        # ==========================================
+        # Host Traffic Tracking
+        # ==========================================
+
+        update_host_traffic(
+            packet.get("src_ip", ""),
+            packet.get("dst_ip", "")
+        )
+
+
+
+        # ==========================================
         # Flow Tracking
         # ==========================================
 
         flow = update_flow(packet)
 
-
         packet["flow_id"] = flow.flow_id
-
 
 
         # Cleanup expired flows
@@ -193,7 +273,6 @@ def analyze_packet(packet):
         result = detect(packet)
 
 
-
         session = get_current_session()
 
 
@@ -205,11 +284,8 @@ def analyze_packet(packet):
 
         if result["status"] == "ALERT":
 
-
             display_live_status(
-
                 get_statistics()
-
             )
 
 
@@ -218,12 +294,9 @@ def analyze_packet(packet):
         # Handle Active Alerts
         # ==========================================
 
-
         for event in result["alerts"]:
 
-
             attack = event["attack"]
-
 
 
             # ----------------------------------
@@ -233,56 +306,43 @@ def analyze_packet(packet):
             if event["status"] == "STARTED":
 
 
-
                 update_attack(
-
                     attack
-
                 )
-
 
                 update_risk(
-
                     attack["severity"]
-
                 )
-
-
 
                 display_alert(
-
                     packet,
-
                     attack
-
                 )
 
 
+                # Show popup alert
+
+                if _alert_manager:
+
+                    _alert_manager.show_alert(
+                        attack
+                    )
+
+
+                # Save to database
 
                 if session:
 
-
-
                     save_alert(
-
                         session.session_id,
-
                         attack
-
                     )
-
 
                     save_suspicious_packet(
-
                         session.session_id,
-
                         attack["alert_id"],
-
                         packet
-
                     )
-
-
 
 
 
@@ -292,31 +352,18 @@ def analyze_packet(packet):
 
             elif event["status"] == "ONGOING":
 
-
-
                 attack_key = (
-
                     attack["source_ip"],
-
                     attack["attack_type"]
-
                 )
-
 
                 update_attack_packet(
-
                     attack_key
-
                 )
-
 
                 display_attack_progress(
-
                     attack
-
                 )
-
-
 
 
 
@@ -324,24 +371,23 @@ def analyze_packet(packet):
         # Finished Attacks
         # ==========================================
 
-
         for attack in result["finished"]:
 
-
             finish_attack(
-
                 attack
-
             )
-
 
             display_finished_attack(
-
                 attack
-
             )
 
+            # Close popup alert
 
+            if _alert_manager:
+
+                _alert_manager.close_alert(
+                    attack
+                )
 
 
 
@@ -349,34 +395,20 @@ def analyze_packet(packet):
         # Save Completed Flows
         # ==========================================
 
-
         if session:
-
 
             completed = get_completed_flows()
 
-
-
             for flow in completed:
 
-
-
                 save_flow(
-
                     session.session_id,
-
                     flow
-
                 )
-
 
                 remove_completed_flow(
-
                     flow.flow_id
-
                 )
-
-
 
 
 
@@ -384,37 +416,21 @@ def analyze_packet(packet):
 
 
 
-
-
     except Exception as error:
 
-
-
         print(
-
-            "\n[ANALYZER ERROR]",
-
-            error
-
+            f"\n[ANALYZER ERROR] {error}"
         )
-
-
 
         return {
 
-
             "status":
-
-            "ERROR",
-
+                "ERROR",
 
             "alerts":
-
-            [],
-
+                [],
 
             "finished":
-
-            []
+                []
 
         }

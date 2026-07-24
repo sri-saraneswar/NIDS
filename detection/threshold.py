@@ -64,7 +64,10 @@ def process_attacks(attacks):
         if attack_key not in active_attacks:
 
 
-            attack["alert_id"] = next_alert_id()
+            attack["alert_id"] = f"ATK-{next_alert_id():04d}"
+
+
+            attack["occurrences"] = 1
 
 
             attack["start_time"] = now
@@ -112,6 +115,9 @@ def process_attacks(attacks):
 
 
             existing["packet_count"] += 1
+
+
+            existing["occurrences"] += 1
 
 
 

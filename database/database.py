@@ -264,6 +264,32 @@ def create_database():
     """)
 
 
+    # =================================================
+    # Statistics Table
+    # =================================================
+
+
+    cursor.execute("""
+
+    CREATE TABLE IF NOT EXISTS statistics(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        session_id TEXT,
+
+        protocol_stats TEXT,
+
+        attack_stats TEXT,
+
+        risk_stats TEXT,
+
+        top_hosts TEXT
+
+    )
+
+    """)
+
+
 
     conn.commit()
 
@@ -711,3 +737,73 @@ def save_suspicious_packet(
     conn.commit()
 
     conn.close()
+
+
+
+# =====================================================
+# Save Statistics
+# =====================================================
+
+
+def save_statistics(session_id, stats):
+    """
+    Save session statistics to the database.
+
+    Stats are stored as JSON strings for flexibility.
+
+    Args:
+        session_id: The session identifier.
+        stats: Dictionary containing protocol_stats,
+               attack_stats, risk_stats, top_hosts.
+    """
+
+    import json
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+    cursor.execute("""
+
+    INSERT INTO statistics
+
+    (
+    session_id,
+    protocol_stats,
+    attack_stats,
+    risk_stats,
+    top_hosts
+    )
+
+    VALUES(?,?,?,?,?)
+
+    """,
+
+    (
+
+        session_id,
+
+        json.dumps(
+            stats.get("protocol_stats", {})
+        ),
+
+        json.dumps(
+            stats.get("attack_types", {})
+        ),
+
+        json.dumps(
+            stats.get("risk_stats", {})
+        ),
+
+        json.dumps(
+            stats.get("top_hosts", [])
+        )
+
+    ))
+
+
+    conn.commit()
+
+    conn.close()

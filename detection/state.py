@@ -96,6 +96,9 @@ broadcast_history = defaultdict(list)
 arp_history = defaultdict(list)
 
 
+large_packet_history = defaultdict(list)
+
+
 
 
 
@@ -155,6 +158,8 @@ def reset_state():
     broadcast_history.clear()
 
     arp_history.clear()
+
+    large_packet_history.clear()
 
 
 
