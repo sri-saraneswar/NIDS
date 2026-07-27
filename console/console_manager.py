@@ -255,6 +255,29 @@ def display_live_status(stats):
 
 
 
+def display_packet_log(packet, packet_number):
+    """
+    Display a detailed multi-line packet log.
+    Used when monitoring ALL interfaces.
+    """
+    
+    interface = packet.get("interface", "Unknown")
+    src = packet.get("src_ip", "?")
+    dst = packet.get("dst_ip", "?")
+    proto = packet.get("protocol", "?")
+    timestamp = format_time(packet.get("timestamp"))
+
+    print(
+        f"\n{Color.CYAN}Packet #{packet_number}{Color.RESET}\n"
+        f"Interface : {interface}\n"
+        f"Source    : {src}\n"
+        f"Dest      : {dst}\n"
+        f"Protocol  : {proto}\n"
+        f"Timestamp : {timestamp}"
+    )
+
+
+
 
 
 # ==========================================================

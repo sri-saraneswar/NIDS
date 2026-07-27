@@ -134,7 +134,9 @@ from console.console_manager import (
 
     display_finished_attack,
 
-    display_live_status
+    display_live_status,
+    
+    display_packet_log
 
 )
 
@@ -146,7 +148,11 @@ from console.console_manager import (
 import time
 
 _alert_manager = None
-_last_ui_update = 0
+_monitor_mode = "SINGLE"
+
+def set_monitor_mode(mode):
+    global _monitor_mode
+    _monitor_mode = mode
 
 
 def set_alert_manager(manager):
@@ -284,18 +290,12 @@ def analyze_packet(packet):
         # Live Status
         # ==========================================
 
-        global _last_ui_update
-        
         stats = get_statistics()
-        now = time.time()
 
-        if (now - _last_ui_update) >= 0.1 or result["status"] == "ALERT":
-
-            display_live_status(
-                stats
-            )
-            
-            _last_ui_update = now
+        if _monitor_mode == "ALL":
+            display_packet_log(packet, stats["packets"])
+        else:
+            display_live_status(stats)
 
 
 

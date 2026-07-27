@@ -181,6 +181,12 @@ def main():
 
     try:
 
+        from analyzer.analyzer import set_monitor_mode
+        if interface == "ALL":
+            set_monitor_mode("ALL")
+        else:
+            set_monitor_mode("SINGLE")
+
         start_capture(interface)
 
 
