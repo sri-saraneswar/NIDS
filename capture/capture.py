@@ -304,13 +304,16 @@ def start_capture(interfaces):
 
         for iface in target_interfaces:
             
+            # Virtual interfaces often drop host-to-vm unicast traffic in promiscuous mode
+            is_virtual = any(v in iface.lower() for v in ["vboxnet", "vmnet", "lo", "docker", "virbr"])
+            
             thread = threading.Thread(
                 target=sniff,
                 kwargs={
                     "iface": iface,
                     "prn": lambda p, i=iface: process_packet(p, i),
                     "store": False,
-                    "promisc": True,
+                    "promisc": not is_virtual,
                     "stop_filter": lambda p: _stop_flag
                 },
                 daemon=True,
