@@ -33,9 +33,15 @@ from scapy.all import (
     ICMP,
     ARP,
     DNS,
-    get_if_list
+    get_if_list,
+    conf
 )
 
+# Force use of libpcap instead of native raw sockets for better compatibility with VirtualBox (vboxnet0) and Docker
+try:
+    conf.use_pcap = True
+except Exception:
+    pass
 
 from analyzer.analyzer import analyze_packet
 
