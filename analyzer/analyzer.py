@@ -143,7 +143,10 @@ from console.console_manager import (
 # Alert Manager (Popup)
 # ==================================================
 
+import time
+
 _alert_manager = None
+_last_ui_update = 0
 
 
 def set_alert_manager(manager):
@@ -281,13 +284,18 @@ def analyze_packet(packet):
         # Live Status
         # ==========================================
 
+        global _last_ui_update
+        
         stats = get_statistics()
+        now = time.time()
 
-        if stats["packets"] % 50 == 0 or result["status"] == "ALERT":
+        if (now - _last_ui_update) >= 0.1 or result["status"] == "ALERT":
 
             display_live_status(
                 stats
             )
+            
+            _last_ui_update = now
 
 
 
