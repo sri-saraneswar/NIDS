@@ -279,13 +279,14 @@ def analyze_packet(packet):
 
         # ==========================================
         # Live Status
-        # Only display when alert happens
         # ==========================================
 
-        if result["status"] == "ALERT":
+        stats = get_statistics()
+
+        if stats["packets"] % 50 == 0 or result["status"] == "ALERT":
 
             display_live_status(
-                get_statistics()
+                stats
             )
 
 

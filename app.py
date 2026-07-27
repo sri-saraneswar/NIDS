@@ -170,6 +170,9 @@ def main():
         author=AUTHOR
     )
 
+    # Display initial live status bar
+    display_live_status(get_statistics())
+
 
 
     # ------------------------------------------
