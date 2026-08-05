@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Active Alerts{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="soc-card">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title">Real-time Threat Alerts</h6>
+            </div>
+            
+            <div class="table-responsive mt-3">
+                <table id="alertsTable" class="table table-soc table-hover w-100">
+                    <thead>
+                        <tr>
+                            <th>Attack ID</th>
+                            <th>Time</th>
+                            <th>Severity</th>
+                            <th>Type</th>
+                            <th>Source IP</th>
+                            <th>Target IP</th>
+                            <th>Packets</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alerts-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-secondary text-light" style="background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color);">
+      <div class="modal-header border-bottom-0">
+        <h5 class="modal-title">Alert Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="alert-modal-body">
+        <!-- Content -->
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-danger">Block IP</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const dataTable = $('#alertsTable').DataTable({
+        pageLength: 25,
+        order: [[1, 'desc']],
+        responsive: true
+    });
+
+    // We store alerts to show in modal
+    let activeAlertsStore = {};
+
+    setInterval(() => {
+        if (!window.appState || !window.appState.isMonitoring) return;
+        
+        fetch('/api/attacks').then(res => res.json()).then(data => {
+            if(data.active) {
+                const table = $('#alertsTable').DataTable();
+                table.clear();
+                activeAlertsStore = {};
+                
+                data.active.forEach(alert => {
+                    activeAlertsStore[alert.attack_id] = alert;
+                    const time = new Date(alert.start_time * 1000).toLocaleString();
+                    const btn = `<button class="btn btn-sm btn-outline-primary" onclick="viewAlert('${alert.attack_id}')">View</button>`;
+                    
+                    table.row.add([
+                        alert.attack_id.substring(0, 8),
+                        time,
+                        getSeverityBadge(alert.severity),
+                        alert.attack_type,
+                        alert.source_ip,
+                        alert.target_ip,
+                        alert.packet_count,
+                        btn
+                    ]);
+                });
+                table.draw(false);
+            }
+        });
+    }, 1000);
+
+    window.viewAlert = function(id) {
+        const alert = activeAlertsStore[id];
+        if(!alert) return;
+        
+        const time = new Date(alert.start_time * 1000).toLocaleString();
+        const html = `
+            <ul class="list-group list-group-flush rounded" style="background-color: var(--bg-primary);">
+                <li class="list-group-item bg-transparent text-light border-secondary"><strong>ID:</strong> ${alert.attack_id}</li>
+                <li class="list-group-item bg-transparent text-light border-secondary"><strong>Type:</strong> ${alert.attack_type}</li>
+                <li class="list-group-item bg-transparent text-light border-secondary"><strong>Severity:</strong> ${getSeverityBadge(alert.severity)}</li>
+                <li class="list-group-item bg-transparent text-light border-secondary"><strong>Source IP:</strong> ${alert.source_ip}</li>
+                <li class="list-group-item bg-transparent text-light border-secondary"><strong>Target IP:</strong> ${alert.target_ip}</li>
+                <li class="list-group-item bg-transparent text-light border-secondary"><strong>Start Time:</strong> ${time}</li>
+                <li class="list-group-item bg-transparent text-light border-secondary"><strong>Packets Captured:</strong> ${alert.packet_count}</li>
+            </ul>
+        `;
+        document.getElementById('alert-modal-body').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('alertModal')).show();
+    }
+</script>
+{% endblock %}

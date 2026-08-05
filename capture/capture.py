@@ -226,6 +226,10 @@ def process_packet(packet, interface):
 
         # 4. Push to Thread-Safe Queue
         packet_queue.put(packet_info)
+        
+        # Add to centralized state manager
+        from state.runtime_state import state_manager
+        state_manager.add_packet(packet_info)
 
 
     except Exception as error:

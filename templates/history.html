@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Attack History{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="soc-card">
+            <div class="soc-card-header d-flex justify-content-between align-items-center">
+                <h6 class="soc-card-title m-0">Historical Attack Database</h6>
+                <div>
+                    <button class="btn btn-sm btn-outline-success me-2" onclick="alert('CSV Exporting...')"><i class="fas fa-file-csv"></i> CSV</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="alert('PDF Exporting...')"><i class="fas fa-file-pdf"></i> PDF</button>
+                </div>
+            </div>
+            
+            <div class="table-responsive mt-3">
+                <table id="historyTable" class="table table-soc table-hover w-100">
+                    <thead>
+                        <tr>
+                            <th>Attack ID</th>
+                            <th>Time</th>
+                            <th>Severity</th>
+                            <th>Type</th>
+                            <th>Source IP</th>
+                            <th>Target IP</th>
+                            <th>Duration</th>
+                            <th>Packets</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody">
+                        <!-- Populated by Data API on load, not live feed, to prevent re-rendering massive tables on every tick -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        const table = $('#historyTable').DataTable({
+            pageLength: 25,
+            order: [[1, 'desc']],
+            responsive: true,
+            ajax: {
+                url: '/api/attacks',
+                dataSrc: 'history'
+            },
+            columns: [
+                { data: 'attack_id', render: data => data.substring(0, 8) },
+                { data: 'start_time', render: data => new Date(data * 1000).toLocaleString() },
+                { data: 'severity', render: data => getSeverityBadge(data) },
+                { data: 'attack_type' },
+                { data: 'source_ip' },
+                { data: 'target_ip' },
+                { data: null, render: data => Math.max(1, Math.round(data.last_seen - data.start_time)) + 's' },
+                { data: 'packet_count' },
+                { data: null, render: () => '<span class="badge bg-secondary text-light">RESOLVED</span>' }
+            ]
+        });
+        
+        // Auto refresh table every 10 seconds to keep history updated
+        setInterval(() => {
+            table.ajax.reload(null, false);
+        }, 10000);
+    });
+</script>
+{% endblock %}

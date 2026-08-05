@@ -9,6 +9,7 @@ Initializes the Flask application for the dashboard.
 """
 
 import os
+import logging
 from flask import Flask
 
 # Get absolute path to the templates and static folders
@@ -22,9 +23,9 @@ app = Flask(
     template_folder=template_dir,
     static_folder=static_dir
 )
+app.config['SECRET_KEY'] = 'nids_secret_key_soc'
 
 # Suppress Flask default logging to keep console output clean
-import logging
 try:
     from flask import cli
     cli.show_server_banner = lambda *args: None

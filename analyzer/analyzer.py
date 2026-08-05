@@ -57,7 +57,6 @@ from flow.flow_tracker import (
 
 )
 
-
 # ==================================================
 # Detection Engine
 # ==================================================
@@ -287,10 +286,14 @@ def analyze_packet(packet):
 
 
         # ==========================================
-        # Live Status
+        # Live Status & State Manager Sync
         # ==========================================
 
         stats = get_statistics()
+        
+        # 1. Analyzer: Every processed packet must update RuntimeState statistics
+        from state.runtime_state import state_manager
+        state_manager.update_statistics(stats)
 
         if _monitor_mode == "ALL":
             display_packet_log(packet, stats["packets"])

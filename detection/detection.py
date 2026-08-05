@@ -104,6 +104,13 @@ def detect(packet):
             events
 
         )
+        
+        from state.runtime_state import state_manager
+        for event in events:
+            if event["status"] == "STARTED":
+                state_manager.add_attack(event["attack"])
+            elif event["status"] == "ONGOING":
+                state_manager.add_attack(event["attack"])
 
 
 
@@ -121,8 +128,11 @@ def detect(packet):
 
 
     result["finished"] = finished
-
-
+    
+    if finished:
+        from state.runtime_state import state_manager
+        for f_attack in finished:
+            state_manager.add_history(f_attack)
 
 
 

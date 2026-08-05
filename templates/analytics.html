@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Analytics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Severity Distribution -->
+    <div class="col-xl-4 col-lg-6 mb-4">
+        <div class="soc-card h-100">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title">Severity Distribution</h6>
+            </div>
+            <div style="height: 250px; display: flex; justify-content: center;">
+                <canvas id="severityChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Protocol Distribution -->
+    <div class="col-xl-4 col-lg-6 mb-4">
+        <div class="soc-card h-100">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title">Protocol Distribution</h6>
+            </div>
+            <div style="height: 250px; display: flex; justify-content: center;">
+                <canvas id="protocolChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Talkers -->
+    <div class="col-xl-4 col-lg-12 mb-4">
+        <div class="soc-card h-100">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title">Top Talkers</h6>
+            </div>
+            <div style="height: 250px; display: flex; justify-content: center;">
+                <canvas id="hostsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Attack Trends -->
+    <div class="col-12">
+        <div class="soc-card">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title">Cumulative Traffic Trend</h6>
+            </div>
+            <div style="height: 350px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Common Chart Options
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom', labels: { color: '#94A3B8' } }
+        }
+    };
+
+    // Severity Chart
+    const ctxSev = document.getElementById('severityChart').getContext('2d');
+    const sevChart = new Chart(ctxSev, {
+        type: 'doughnut',
+        data: {
+            labels: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
+            datasets: [{
+                data: [0, 0, 0, 0],
+                backgroundColor: ['#EF4444', '#F97316', '#F59E0B', '#10B981'],
+                borderWidth: 0
+            }]
+        },
+        options: { ...commonOptions, cutout: '70%' }
+    });
+    
+    // Protocol Chart
+    const ctxProto = document.getElementById('protocolChart').getContext('2d');
+    const protoChart = new Chart(ctxProto, {
+        type: 'pie',
+        data: {
+            labels: ['TCP', 'UDP', 'ICMP', 'OTHER'],
+            datasets: [{
+                data: [0, 0, 0, 0],
+                backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#64748B'],
+                borderWidth: 0
+            }]
+        },
+        options: commonOptions
+    });
+    
+    // Top Hosts Bar Chart
+    const ctxHosts = document.getElementById('hostsChart').getContext('2d');
+    const hostsChart = new Chart(ctxHosts, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Packets',
+                data: [],
+                backgroundColor: '#3B82F6',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94A3B8' } },
+                x: { grid: { display: false }, ticks: { color: '#94A3B8' } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Trend Line Chart
+    const ctxTrend = document.getElementById('trendChart').getContext('2d');
+    const trendChart = new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+            labels: Array(30).fill(''),
+            datasets: [
+                {
+                    label: 'Total Packets',
+                    data: Array(30).fill(0),
+                    borderColor: '#8B5CF6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 0 },
+            scales: {
+                y: { beginAtZero: false, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94A3B8' } },
+                x: { grid: { display: false }, ticks: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    setInterval(() => {
+        if (!window.appState || !window.appState.isMonitoring) return;
+        
+        fetch('/api/status').then(res => res.json()).then(stats => {
+            // Update Severity
+            sevChart.data.datasets[0].data = [
+                stats.critical || 0,
+                stats.high || 0,
+                stats.medium || 0,
+                stats.low || 0
+            ];
+            sevChart.update();
+            
+            // Update Protocol
+            if(stats.protocol_counts) {
+                protoChart.data.datasets[0].data = [
+                    stats.protocol_counts.TCP || 0,
+                    stats.protocol_counts.UDP || 0,
+                    stats.protocol_counts.ICMP || 0,
+                    stats.protocol_counts.OTHER || 0
+                ];
+                protoChart.update();
+            }
+            
+            // Update Trend
+            const tData = trendChart.data.datasets[0].data;
+            tData.push(stats.packets);
+            tData.shift();
+            trendChart.update();
+        });
+        
+        fetch('/api/hosts').then(res => res.json()).then(data => {
+            if(data) {
+                const top5 = data.slice(0, 5);
+                hostsChart.data.labels = top5.map(h => h.ip);
+                hostsChart.data.datasets[0].data = top5.map(h => h.packets);
+                hostsChart.update();
+            }
+        });
+    }, 1000);
+</script>
+{% endblock %}

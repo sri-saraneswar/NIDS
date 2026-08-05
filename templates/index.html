@@ -1,135 +1,371 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NIDS Dashboard</title>
-    <!-- CSS styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <!-- Chart.js for data visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Google Fonts for sleek typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="dashboard-container">
-        
-        <!-- Header -->
-        <header class="header glass-panel">
-            <div class="logo">
-                <div class="logo-icon">🛡️</div>
-                <h1>NIDS <span class="dim-text">Real-Time Dashboard</span></h1>
-            </div>
-            <div class="status-container">
-                <div class="status-indicator">
-                    <span class="status-dot"></span>
-                    <span id="session-status">System Active</span>
-                </div>
-                <div class="risk-badge" id="risk-badge">
-                    RISK: <span id="risk-level">LOW</span>
-                </div>
-            </div>
-        </header>
+{% extends 'base.html' %}
 
-        <!-- Main Content -->
-        <main class="grid-layout">
-            
-            <!-- Key Metrics Cards -->
-            <section class="metrics-row">
-                <div class="metric-card glass-panel">
-                    <h3>Total Packets</h3>
-                    <div class="metric-value" id="val-packets">0</div>
-                </div>
-                <div class="metric-card glass-panel">
-                    <h3>Total Traffic</h3>
-                    <div class="metric-value" id="val-bytes">0 B</div>
-                </div>
-                <div class="metric-card glass-panel">
-                    <h3>Security Alerts</h3>
-                    <div class="metric-value text-red" id="val-alerts">0</div>
-                </div>
-                <div class="metric-card glass-panel">
-                    <h3>Warnings</h3>
-                    <div class="metric-value text-yellow" id="val-warnings">0</div>
-                </div>
-            </section>
+{% block page_title %}Dashboard Overview{% endblock %}
 
-            <!-- Charts and Tables -->
-            <div class="content-row">
-                
-                <!-- Left Column -->
-                <div class="col-left">
-                    
-                    <!-- Protocol Chart -->
-                    <div class="panel glass-panel">
-                        <h2>Protocol Distribution</h2>
-                        <div class="chart-container">
-                            <canvas id="protocolChart"></canvas>
-                        </div>
-                    </div>
-                    
-                    <!-- Top Hosts -->
-                    <div class="panel glass-panel">
-                        <h2>Top Communicating Hosts</h2>
-                        <div class="table-container">
-                            <table class="data-table" id="hosts-table">
-                                <thead>
-                                    <tr>
-                                        <th>IP Address</th>
-                                        <th class="text-right">Packets</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Dynamic content -->
-                                    <tr><td colspan="2" class="text-center dim-text">Waiting for traffic...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                </div>
-                
-                <!-- Right Column -->
-                <div class="col-right">
-                    
-                    <!-- Active Attacks -->
-                    <div class="panel glass-panel border-red">
-                        <h2>Active Threats <span class="badge" id="badge-active">0</span></h2>
-                        <div class="attack-list" id="active-attacks-list">
-                            <!-- Dynamic content -->
-                            <div class="empty-state">No active threats detected.</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Attack History -->
-                    <div class="panel glass-panel">
-                        <h2>Attack History</h2>
-                        <div class="table-container full-height">
-                            <table class="data-table" id="attacks-table">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Type</th>
-                                        <th>Severity</th>
-                                        <th>Target</th>
-                                        <th>Packets</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Dynamic content -->
-                                    <tr><td colspan="5" class="text-center dim-text">No attacks recorded yet.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                </div>
+{% block content %}
+<!-- Control Panel -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="soc-card d-flex justify-content-between align-items-center" style="margin-bottom: 0;">
+            <div class="d-flex align-items-center gap-3">
+                <select id="interface-select" class="form-select bg-transparent text-light border-secondary" style="width: 250px;">
+                    <option value="">Loading interfaces...</option>
+                </select>
+                <button id="btn-start" class="btn btn-primary"><i class="fas fa-play me-2"></i>Start Monitoring</button>
+                <button id="btn-stop" class="btn btn-outline-danger" disabled><i class="fas fa-stop me-2"></i>Stop</button>
             </div>
-            
-        </main>
+            <div class="d-flex align-items-center gap-2">
+                <span id="status-indicator" class="pulse-indicator" style="background-color: var(--accent-critical); animation: none; box-shadow: none;"></span>
+                <span id="status-text" class="fw-bold text-secondary">STOPPED</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Packets Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="soc-card stat-card">
+            <div class="stat-icon primary">
+                <i class="fas fa-network-wired"></i>
+            </div>
+            <div class="stat-details">
+                <h3 id="stat-packets">0</h3>
+                <p>Total Packets</p>
+            </div>
+        </div>
     </div>
     
-    <!-- Application Logic -->
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-</body>
-</html>
+    <!-- Alerts Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="soc-card stat-card">
+            <div class="stat-icon high">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="stat-details">
+                <h3 id="stat-alerts">0</h3>
+                <p>Alerts</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Risk Level Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="soc-card stat-card">
+            <div class="stat-icon low" id="risk-icon-bg">
+                <i class="fas fa-shield-virus"></i>
+            </div>
+            <div class="stat-details">
+                <h3 id="stat-risk" class="text-success">LOW</h3>
+                <p>System Risk</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Flows Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="soc-card stat-card">
+            <div class="stat-icon medium">
+                <i class="fas fa-project-diagram"></i>
+            </div>
+            <div class="stat-details">
+                <h3 id="stat-bytes">0 B</h3>
+                <p>Total Traffic</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Live Traffic Graph -->
+    <div class="col-xl-8 col-lg-7 mb-4">
+        <div class="soc-card">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title">Live Traffic Monitoring</h6>
+                <span class="badge-soc badge-low"><i class="fas fa-circle me-1"></i> Live</span>
+            </div>
+            <div style="height: 300px;">
+                <canvas id="trafficChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Protocol Distribution -->
+    <div class="col-xl-4 col-lg-5 mb-4">
+        <div class="soc-card">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title">Protocol Distribution</h6>
+            </div>
+            <div style="height: 300px; display: flex; justify-content: center;">
+                <canvas id="protocolChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Alerts -->
+    <div class="col-xl-8 mb-4">
+        <div class="soc-card">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title">Recent Alerts</h6>
+                <a href="{{ url_for('alerts') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-soc" id="recentAlertsTable">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Severity</th>
+                            <th>Type</th>
+                            <th>Source</th>
+                            <th>Destination</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alerts-body">
+                        <!-- Populated via JS Polling -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Hosts -->
+    <div class="col-xl-4 mb-4">
+        <div class="soc-card">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title">Top Talkers</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-soc">
+                    <thead>
+                        <tr>
+                            <th>Host IP</th>
+                            <th class="text-end">Packets</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hosts-body">
+                        <!-- Populated via JS Polling -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize Charts
+    const ctxTraffic = document.getElementById('trafficChart').getContext('2d');
+    const trafficChart = new Chart(ctxTraffic, {
+        type: 'line',
+        data: {
+            labels: Array(20).fill(''),
+            datasets: [{
+                label: 'Packets/sec',
+                data: Array(20).fill(0),
+                borderColor: '#3B82F6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 0 },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94A3B8' } },
+                x: { grid: { display: false }, ticks: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    const ctxProtocol = document.getElementById('protocolChart').getContext('2d');
+    const protocolChart = new Chart(ctxProtocol, {
+        type: 'doughnut',
+        data: {
+            labels: ['TCP', 'UDP', 'ICMP', 'OTHER'],
+            datasets: [{
+                data: [0, 0, 0, 0],
+                backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#64748B'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#94A3B8', padding: 20 } }
+            }
+        }
+    });
+
+    // Theme update hook for charts
+    function updateChartTheme(theme) {
+        const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+        const textColor = theme === 'dark' ? '#94A3B8' : '#475569';
+        
+        trafficChart.options.scales.y.grid.color = gridColor;
+        trafficChart.options.scales.y.ticks.color = textColor;
+        protocolChart.options.plugins.legend.labels.color = textColor;
+        
+        trafficChart.update();
+        protocolChart.update();
+    }
+    
+    // Initial theme set
+    updateChartTheme(document.documentElement.getAttribute('data-theme'));
+
+    let lastPackets = 0;
+
+    // Load Interfaces
+    fetch('/api/interfaces')
+        .then(res => res.json())
+        .then(interfaces => {
+            const select = document.getElementById('interface-select');
+            select.innerHTML = '<option value="ALL">ALL (Promiscuous Mode)</option>';
+            interfaces.forEach(iface => {
+                select.innerHTML += `<option value="${iface}">${iface}</option>`;
+            });
+        });
+
+    // Control Buttons
+    document.getElementById('btn-start').addEventListener('click', () => {
+        const interface = document.getElementById('interface-select').value;
+        fetch('/api/start', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ interface: interface })
+        }).then(res => res.json()).then(data => {
+            window.appState.isMonitoring = true;
+            document.getElementById('btn-start').disabled = true;
+            document.getElementById('btn-stop').disabled = false;
+            document.getElementById('interface-select').disabled = true;
+            
+            const indicator = document.getElementById('status-indicator');
+            indicator.style.backgroundColor = 'var(--accent-low)';
+            indicator.style.animation = 'pulse 2s infinite';
+            
+            const text = document.getElementById('status-text');
+            text.innerText = `RUNNING (${data.interface})`;
+            text.className = 'fw-bold text-success';
+        });
+    });
+
+    document.getElementById('btn-stop').addEventListener('click', () => {
+        fetch('/api/stop', { method: 'POST' }).then(res => res.json()).then(data => {
+            window.appState.isMonitoring = false;
+            document.getElementById('btn-start').disabled = false;
+            document.getElementById('btn-stop').disabled = true;
+            document.getElementById('interface-select').disabled = false;
+            
+            const indicator = document.getElementById('status-indicator');
+            indicator.style.backgroundColor = 'var(--accent-critical)';
+            indicator.style.animation = 'none';
+            indicator.style.boxShadow = 'none';
+            
+            const text = document.getElementById('status-text');
+            text.innerText = 'STOPPED';
+            text.className = 'fw-bold text-secondary';
+        });
+    });
+
+    // JavaScript Polling every 1000ms
+    setInterval(() => {
+        if (!window.appState.isMonitoring) return;
+        
+        // Fetch Status
+        fetch('/api/status').then(res => res.json()).then(stats => {
+            // Update KPI Cards
+            document.getElementById('stat-packets').innerText = stats.packets.toLocaleString();
+            document.getElementById('stat-alerts').innerText = stats.alerts.toLocaleString();
+            document.getElementById('stat-bytes').innerText = formatBytes(stats.total_bytes);
+            
+            // Risk logic
+            const riskEl = document.getElementById('stat-risk');
+            const riskIcon = document.getElementById('risk-icon-bg');
+            riskEl.innerText = stats.risk;
+            
+            riskEl.className = '';
+            riskIcon.className = 'stat-icon ';
+            
+            if(stats.risk === 'CRITICAL') { riskEl.classList.add('text-danger'); riskIcon.classList.add('critical'); }
+            else if(stats.risk === 'HIGH') { riskEl.classList.add('text-warning'); riskIcon.classList.add('high'); }
+            else if(stats.risk === 'MEDIUM') { riskEl.classList.add('text-warning'); riskIcon.classList.add('medium'); }
+            else { riskEl.style.color = '#10B981'; riskIcon.classList.add('low'); }
+            
+            // Update Traffic Chart (Packets per second)
+            const pps = stats.packets >= lastPackets ? (stats.packets - lastPackets) : 0;
+            lastPackets = stats.packets;
+            
+            const tData = trafficChart.data.datasets[0].data;
+            tData.push(pps);
+            tData.shift();
+            trafficChart.update();
+            
+            // Update Protocol Chart
+            if(stats.protocol_counts) {
+                protocolChart.data.datasets[0].data = [
+                    stats.protocol_counts.TCP || 0,
+                    stats.protocol_counts.UDP || 0,
+                    stats.protocol_counts.ICMP || 0,
+                    stats.protocol_counts.OTHER || 0
+                ];
+                protocolChart.update();
+            }
+        });
+        
+        // Fetch Attacks
+        fetch('/api/attacks').then(res => res.json()).then(data => {
+            if(data.active) {
+                const tbody = document.getElementById('alerts-body');
+                tbody.innerHTML = '';
+                const recent = data.active.slice(-5).reverse();
+                if(recent.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">No active alerts</td></tr>';
+                } else {
+                    recent.forEach(alert => {
+                        const time = new Date(alert.start_time * 1000).toLocaleTimeString();
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${time}</td>
+                                <td>${getSeverityBadge(alert.severity)}</td>
+                                <td>${alert.attack_type}</td>
+                                <td><span class="text-secondary">${alert.source_ip}</span></td>
+                                <td><span class="text-secondary">${alert.target_ip}</span></td>
+                            </tr>
+                        `;
+                    });
+                }
+            }
+        });
+        
+        // Fetch Hosts
+        fetch('/api/hosts').then(res => res.json()).then(data => {
+            const tbody = document.getElementById('hosts-body');
+            tbody.innerHTML = '';
+            const top5 = data.slice(0, 5);
+            if(top5.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="text-center text-secondary">No traffic data</td></tr>';
+            } else {
+                top5.forEach(host => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-medium">${host.ip}</td>
+                            <td class="text-end text-secondary">${host.packets.toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+            }
+        });
+        
+    }, 1000);
+</script>
+{% endblock %}

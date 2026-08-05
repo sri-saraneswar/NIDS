@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block page_title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Network Interfaces -->
+    <div class="col-lg-6 mb-4">
+        <div class="soc-card h-100">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title"><i class="fas fa-network-wired me-2"></i> Network Interface Configuration</h6>
+            </div>
+            <form class="mt-3">
+                <div class="mb-3">
+                    <label class="form-label text-secondary">Active Capture Interface</label>
+                    <select class="form-select bg-transparent text-light border-secondary" disabled>
+                        <option>ALL (Promiscuous Mode)</option>
+                        <option>eth0</option>
+                        <option>wlan0</option>
+                    </select>
+                    <small class="text-muted mt-2 d-block">Interface changes require a system restart in the console.</small>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Appearance Settings -->
+    <div class="col-lg-6 mb-4">
+        <div class="soc-card h-100">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title"><i class="fas fa-palette me-2"></i> Dashboard Appearance</h6>
+            </div>
+            <div class="mt-3">
+                <p class="text-secondary mb-2">Theme Preference</p>
+                <div class="d-flex gap-3">
+                    <button class="btn btn-outline-light w-50" onclick="document.documentElement.setAttribute('data-theme', 'light'); localStorage.setItem('theme', 'light'); updateChartTheme('light');"><i class="fas fa-sun me-2"></i> Light Mode</button>
+                    <button class="btn btn-outline-dark w-50 border-secondary" onclick="document.documentElement.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); updateChartTheme('dark');"><i class="fas fa-moon me-2"></i> Dark Mode</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Detection Thresholds -->
+    <div class="col-12">
+        <div class="soc-card">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title"><i class="fas fa-sliders me-2"></i> Detection Engine Thresholds</h6>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6 mb-4">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>SYN Flood Sensitivity</span>
+                        <span class="text-primary fw-bold">100 pkts/sec</span>
+                    </label>
+                    <input type="range" class="form-range" min="10" max="500" value="100">
+                </div>
+                <div class="col-md-6 mb-4">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Port Scan Sensitivity</span>
+                        <span class="text-primary fw-bold">50 ports/sec</span>
+                    </label>
+                    <input type="range" class="form-range" min="5" max="200" value="50">
+                </div>
+                <div class="col-md-6 mb-4">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Ping of Death Size</span>
+                        <span class="text-primary fw-bold">65500 Bytes</span>
+                    </label>
+                    <input type="range" class="form-range" min="10000" max="65535" value="65500">
+                </div>
+                <div class="col-md-6 mb-4">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Anomaly Detection Strictness</span>
+                        <span class="text-primary fw-bold">High</span>
+                    </label>
+                    <input type="range" class="form-range" min="1" max="3" value="3" step="1">
+                </div>
+            </div>
+            
+            <div class="text-end mt-3 border-top border-secondary pt-3" style="border-color: var(--border-color) !important;">
+                <button class="btn btn-outline-secondary me-2">Reset to Defaults</button>
+                <button class="btn btn-primary" onclick="alert('Thresholds saved (Simulated in Dashboard, Backend unchanged based on requirements)')">Save Thresholds</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -64,21 +64,7 @@ from session.session_manager import (
 )
 
 
-from detection.statistics import (
-    get_statistics,
-    get_top_hosts
-)
-
-
-from console.console_manager import (
-    display_banner,
-    display_live_status,
-    display_session_summary,
-    display_attack_history,
-    display_top_hosts,
-    display_session_status,
-    display_db_status
-)
+# Imports that were not used have been removed
 
 
 
@@ -95,202 +81,26 @@ def main():
 
     Workflow:
         1. Initialize database
-        2. Select network interface
-        3. Start monitoring session
-        4. Start alert popup system
-        5. Capture packets until Ctrl+C
-        6. Generate session summary report
-        7. Save everything to database
+        2. Start Dashboard Server (Foreground)
     """
-
 
     # ------------------------------------------
     # Initialize Database
     # ------------------------------------------
-
     create_database()
-
-
-
-    # ------------------------------------------
-    # Select Network Interface
-    # ------------------------------------------
-
-    interface = show_interfaces()
-
-
-
-    # ------------------------------------------
-    # Start Session
-    # ------------------------------------------
-
-    start_session(
-        interface=interface
-    )
-
-
-
-    # ------------------------------------------
-    # Start Alert System
-    # ------------------------------------------
-
-    alert_manager = AlertManager()
-
-    alert_manager.start()
-
-    set_alert_manager(alert_manager)
-
-
 
     # ------------------------------------------
     # Start Dashboard Server
     # ------------------------------------------
-
-    dashboard_thread = threading.Thread(
-        target=lambda: flask_app.run(
-            host="0.0.0.0",
-            port=5000,
-            debug=False,
-            use_reloader=False
-        ),
-        daemon=True
-    )
+    print("\n  Starting NIDS Dashboard...")
+    print("  Access the Web UI at http://127.0.0.1:5000\n")
     
-    dashboard_thread.start()
-
-
-
-    # ------------------------------------------
-    # Display Banner
-    # ------------------------------------------
-
-    display_banner(
-        interface=interface,
-        version=IDS_VERSION,
-        author=AUTHOR
+    flask_app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=False,
+        use_reloader=False
     )
-
-    # Display initial live status bar
-    display_live_status(get_statistics())
-
-
-
-    # ------------------------------------------
-    # Start Capture
-    # ------------------------------------------
-
-    try:
-
-        from analyzer.analyzer import set_monitor_mode
-        if interface == "ALL":
-            set_monitor_mode("ALL")
-        else:
-            set_monitor_mode("SINGLE")
-
-        start_capture(interface)
-
-
-    except KeyboardInterrupt:
-
-        pass
-
-
-
-    # ------------------------------------------
-    # Graceful Shutdown
-    # ------------------------------------------
-
-    print("\n")
-    print("  Stopping IDS...")
-    print()
-
-
-    # Stop capture
-
-    stop_capture()
-
-
-    # Stop alert popups
-
-    alert_manager.stop()
-
-
-    # Close session
-
-    stop_session()
-
-
-
-    # ------------------------------------------
-    # Session Summary Report
-    # ------------------------------------------
-
-    summary = get_session_summary()
-
-    stats = get_statistics()
-
-    attacks = get_attack_summary()
-
-    top_hosts = get_top_hosts(10)
-
-
-
-    # Display full report
-
-    display_session_summary(summary)
-
-    display_attack_history(attacks)
-
-    display_top_hosts(top_hosts)
-
-    display_session_status(summary)
-
-
-
-    # ------------------------------------------
-    # Save Statistics to Database
-    # ------------------------------------------
-
-    db_success = True
-
-    try:
-
-        if summary.get("session_id"):
-
-            save_statistics(
-                summary["session_id"],
-                {
-                    "protocol_stats":
-                        summary.get(
-                            "protocol_stats", {}
-                        ),
-
-                    "attack_types":
-                        summary.get(
-                            "attack_types", {}
-                        ),
-
-                    "risk_stats":
-                        summary.get(
-                            "risk_stats", {}
-                        ),
-
-                    "top_hosts":
-                        top_hosts
-                }
-            )
-
-    except Exception as error:
-
-        db_success = False
-
-        print(
-            f"  [DATABASE ERROR] {error}"
-        )
-
-
-
-    display_db_status(db_success)
 
 
 

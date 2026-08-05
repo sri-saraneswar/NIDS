@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Reports Generation{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="soc-card h-100 text-center py-5">
+            <i class="fas fa-shield-halved fa-4x text-primary mb-3"></i>
+            <h4 class="mb-3">Session Summary</h4>
+            <p class="text-secondary mb-4">Complete overview of the current monitoring session including total traffic, general risks, and global statistics.</p>
+            <div class="d-flex justify-content-center gap-2">
+                <button class="btn btn-primary" onclick="alert('Generating Session Summary PDF...')"><i class="fas fa-file-pdf me-2"></i> PDF</button>
+                <button class="btn btn-outline-primary" onclick="alert('Generating Session Summary CSV...')"><i class="fas fa-file-csv me-2"></i> CSV</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="soc-card h-100 text-center py-5">
+            <i class="fas fa-bug fa-4x text-danger mb-3"></i>
+            <h4 class="mb-3">Attack Summary</h4>
+            <p class="text-secondary mb-4">Detailed breakdown of all detected attacks, targeted hosts, attacker IPs, and threat severities.</p>
+            <div class="d-flex justify-content-center gap-2">
+                <button class="btn btn-danger" onclick="alert('Generating Attack Summary PDF...')"><i class="fas fa-file-pdf me-2"></i> PDF</button>
+                <button class="btn btn-outline-danger" onclick="alert('Generating Attack Summary CSV...')"><i class="fas fa-file-csv me-2"></i> CSV</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="soc-card h-100 text-center py-5">
+            <i class="fas fa-project-diagram fa-4x text-success mb-3"></i>
+            <h4 class="mb-3">Protocol Summary</h4>
+            <p class="text-secondary mb-4">Analysis of network traffic distribution by protocol (TCP, UDP, ICMP), identifying anomalous protocol spikes.</p>
+            <div class="d-flex justify-content-center gap-2">
+                <button class="btn btn-success" onclick="alert('Generating Protocol Summary PDF...')"><i class="fas fa-file-pdf me-2"></i> PDF</button>
+                <button class="btn btn-outline-success" onclick="alert('Generating Protocol Summary CSV...')"><i class="fas fa-file-csv me-2"></i> CSV</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="soc-card">
+            <div class="soc-card-header">
+                <h6 class="soc-card-title">Automated Reporting Schedule</h6>
+            </div>
+            <div class="p-3 border border-secondary rounded mt-3" style="border-color: var(--border-color) !important;">
+                <form>
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <label class="form-label">Report Type</label>
+                            <select class="form-select bg-transparent text-light border-secondary">
+                                <option>Comprehensive SOC Report</option>
+                                <option>Executive Summary</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Frequency</label>
+                            <select class="form-select bg-transparent text-light border-secondary">
+                                <option>Daily at 00:00</option>
+                                <option>Weekly</option>
+                                <option>Monthly</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Email Recipients</label>
+                            <input type="text" class="form-control bg-transparent text-light border-secondary" placeholder="soc-team@company.com">
+                        </div>
+                        <div class="col-md-2 text-end mt-4">
+                            <button type="button" class="btn btn-primary w-100">Save Schedule</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

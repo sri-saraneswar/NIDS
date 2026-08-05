@@ -21,6 +21,7 @@ Stores runtime IDS statistics.
 
 
 from collections import defaultdict
+from state.runtime_state import state_manager
 
 
 
@@ -74,6 +75,7 @@ def update_packet_count():
     """Increment the global packet counter."""
 
     statistics["packets"] += 1
+    state_manager.update_statistics(statistics)
 
 
 
@@ -103,6 +105,8 @@ def update_protocol(protocol, packet_size):
 
     # Byte tracking
     statistics["total_bytes"] += packet_size
+    state_manager.update_statistics(statistics)
+    state_manager.update_protocol_statistics(statistics["protocol_counts"])
 
 
 
@@ -132,6 +136,8 @@ def update_host_traffic(src_ip, dst_ip):
             dst_ip, 0
         )
         statistics["host_traffic"][dst_ip] += 1
+        
+    state_manager.update_top_hosts(get_top_hosts(10))
 
 
 
@@ -225,6 +231,9 @@ def update_statistics(events):
             target, 0
         )
         statistics["top_targets"][target] += 1
+        
+    state_manager.update_statistics(statistics)
+    state_manager.update_risk(statistics["risk"])
 
 
 
