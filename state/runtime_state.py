@@ -10,18 +10,16 @@ Centralized state manager for the frontend communication.
 
 import collections
 
-from detection.statistics import statistics
-
 class RuntimeState:
     def __init__(self):
         self.live_packets = collections.deque(maxlen=100)
         self.is_monitoring = False
         self.current_interface = None
         
-        # Reuse existing statistics to avoid duplication
-        self.dashboard_statistics = statistics
+        # Will be bound to existing structures to avoid duplication
+        self.dashboard_statistics = {}
         self.top_hosts = []
-        self.protocol_statistics = statistics["protocol_counts"]
+        self.protocol_statistics = {}
         
         self.active_attacks = []
         self.attack_history = []
@@ -41,8 +39,8 @@ class RuntimeState:
         self.live_packets.append(packet)
 
     def update_statistics(self, stats):
-        """Update dashboard statistics."""
-        self.dashboard_statistics.update(stats)
+        """Update dashboard statistics (bind to reference)."""
+        self.dashboard_statistics = stats
 
     def update_risk(self, risk):
         """Update the current risk level."""
