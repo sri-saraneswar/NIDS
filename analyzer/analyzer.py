@@ -294,6 +294,7 @@ def analyze_packet(packet):
         # 1. Analyzer: Every processed packet must update RuntimeState statistics
         from state.runtime_state import state_manager
         state_manager.update_statistics(stats)
+        state_manager.add_packet(packet)
 
         if _monitor_mode == "ALL":
             display_packet_log(packet, stats["packets"])

@@ -47,16 +47,16 @@
             order: [[1, 'desc']],
             responsive: true,
             ajax: {
-                url: '/api/attacks',
-                dataSrc: 'history'
+                url: '/api/history',
+                dataSrc: ''
             },
             columns: [
-                { data: 'attack_id', render: data => data.substring(0, 8) },
+                { data: 'alert_id', render: data => data ? data.substring(0, 8) : '' },
                 { data: 'start_time', render: data => new Date(data * 1000).toLocaleString() },
                 { data: 'severity', render: data => getSeverityBadge(data) },
                 { data: 'attack_type' },
                 { data: 'source_ip' },
-                { data: 'target_ip' },
+                { data: 'destination_ip', defaultContent: '' },
                 { data: null, render: data => Math.max(1, Math.round(data.last_seen - data.start_time)) + 's' },
                 { data: 'packet_count' },
                 { data: null, render: () => '<span class="badge bg-secondary text-light">RESOLVED</span>' }

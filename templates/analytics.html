@@ -155,7 +155,7 @@
     setInterval(() => {
         if (!window.appState || !window.appState.isMonitoring) return;
         
-        fetch('/api/status').then(res => res.json()).then(stats => {
+        fetch('/api/statistics').then(res => res.json()).then(stats => {
             // Update Severity
             sevChart.data.datasets[0].data = [
                 stats.critical || 0,
@@ -185,7 +185,7 @@
         
         fetch('/api/hosts').then(res => res.json()).then(data => {
             if(data) {
-                const top5 = data.slice(0, 5);
+                const top5 = data.map(h => ({ip: h[0], packets: h[1]})).slice(0, 5);
                 hostsChart.data.labels = top5.map(h => h.ip);
                 hostsChart.data.datasets[0].data = top5.map(h => h.packets);
                 hostsChart.update();

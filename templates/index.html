@@ -4,6 +4,7 @@
 
 {% block content %}
 <!-- Control Panel -->
+ 
 <div class="row mb-4">
     <div class="col-12">
         <div class="soc-card d-flex justify-content-between align-items-center" style="margin-bottom: 0;">
@@ -282,7 +283,7 @@
         if (!window.appState.isMonitoring) return;
         
         // Fetch Status
-        fetch('/api/status').then(res => res.json()).then(stats => {
+        fetch('/api/statistics').then(res => res.json()).then(stats => {
             // Update KPI Cards
             document.getElementById('stat-packets').innerText = stats.packets.toLocaleString();
             document.getElementById('stat-alerts').innerText = stats.alerts.toLocaleString();
@@ -323,11 +324,11 @@
         });
         
         // Fetch Attacks
-        fetch('/api/attacks').then(res => res.json()).then(data => {
-            if(data.active) {
+        fetch('/api/alerts').then(res => res.json()).then(data => {
+            if(data && Array.isArray(data)) {
                 const tbody = document.getElementById('alerts-body');
                 tbody.innerHTML = '';
-                const recent = data.active.slice(-5).reverse();
+                const recent = data.slice(-5).reverse();
                 if(recent.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">No active alerts</td></tr>';
                 } else {
@@ -339,7 +340,7 @@
                                 <td>${getSeverityBadge(alert.severity)}</td>
                                 <td>${alert.attack_type}</td>
                                 <td><span class="text-secondary">${alert.source_ip}</span></td>
-                                <td><span class="text-secondary">${alert.target_ip}</span></td>
+                                <td><span class="text-secondary">${alert.destination_ip}</span></td>
                             </tr>
                         `;
                     });
@@ -351,7 +352,7 @@
         fetch('/api/hosts').then(res => res.json()).then(data => {
             const tbody = document.getElementById('hosts-body');
             tbody.innerHTML = '';
-            const top5 = data.slice(0, 5);
+            const top5 = data.map(h => ({ip: h[0], packets: h[1]})).slice(0, 5);
             if(top5.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="2" class="text-center text-secondary">No traffic data</td></tr>';
             } else {

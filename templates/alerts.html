@@ -67,24 +67,24 @@
     setInterval(() => {
         if (!window.appState || !window.appState.isMonitoring) return;
         
-        fetch('/api/attacks').then(res => res.json()).then(data => {
-            if(data.active) {
+        fetch('/api/alerts').then(res => res.json()).then(data => {
+            if(data && Array.isArray(data)) {
                 const table = $('#alertsTable').DataTable();
                 table.clear();
                 activeAlertsStore = {};
                 
-                data.active.forEach(alert => {
-                    activeAlertsStore[alert.attack_id] = alert;
+                data.forEach(alert => {
+                    activeAlertsStore[alert.alert_id] = alert;
                     const time = new Date(alert.start_time * 1000).toLocaleString();
-                    const btn = `<button class="btn btn-sm btn-outline-primary" onclick="viewAlert('${alert.attack_id}')">View</button>`;
+                    const btn = `<button class="btn btn-sm btn-outline-primary" onclick="viewAlert('${alert.alert_id}')">View</button>`;
                     
                     table.row.add([
-                        alert.attack_id.substring(0, 8),
+                        alert.alert_id.substring(0, 8),
                         time,
                         getSeverityBadge(alert.severity),
                         alert.attack_type,
                         alert.source_ip,
-                        alert.target_ip,
+                        alert.destination_ip || alert.target_ip,
                         alert.packet_count,
                         btn
                     ]);
@@ -101,11 +101,11 @@
         const time = new Date(alert.start_time * 1000).toLocaleString();
         const html = `
             <ul class="list-group list-group-flush rounded" style="background-color: var(--bg-primary);">
-                <li class="list-group-item bg-transparent text-light border-secondary"><strong>ID:</strong> ${alert.attack_id}</li>
+                <li class="list-group-item bg-transparent text-light border-secondary"><strong>ID:</strong> ${alert.alert_id}</li>
                 <li class="list-group-item bg-transparent text-light border-secondary"><strong>Type:</strong> ${alert.attack_type}</li>
                 <li class="list-group-item bg-transparent text-light border-secondary"><strong>Severity:</strong> ${getSeverityBadge(alert.severity)}</li>
                 <li class="list-group-item bg-transparent text-light border-secondary"><strong>Source IP:</strong> ${alert.source_ip}</li>
-                <li class="list-group-item bg-transparent text-light border-secondary"><strong>Target IP:</strong> ${alert.target_ip}</li>
+                <li class="list-group-item bg-transparent text-light border-secondary"><strong>Target IP:</strong> ${alert.destination_ip || alert.target_ip}</li>
                 <li class="list-group-item bg-transparent text-light border-secondary"><strong>Start Time:</strong> ${time}</li>
                 <li class="list-group-item bg-transparent text-light border-secondary"><strong>Packets Captured:</strong> ${alert.packet_count}</li>
             </ul>
