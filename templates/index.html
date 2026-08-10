@@ -278,9 +278,29 @@
         });
     });
 
-    // JavaScript Polling every 1000ms
-    setInterval(() => {
-        if (!window.appState.isMonitoring) return;
+    // Handle synchronization event
+    document.addEventListener('nids:sync', async () => {
+        if (window.appState.isMonitoring) {
+            document.getElementById('btn-start').disabled = true;
+            document.getElementById('btn-stop').disabled = false;
+            document.getElementById('interface-select').disabled = true;
+            
+            const indicator = document.getElementById('status-indicator');
+            indicator.style.backgroundColor = 'var(--accent-low)';
+            indicator.style.animation = 'pulse 2s infinite';
+            
+            // Fetch interface name if active
+            const res = await fetch('/api/is_monitoring');
+            const data = await res.json();
+            
+            const text = document.getElementById('status-text');
+            text.innerText = `RUNNING (${data.interface || 'ALL'})`;
+            text.className = 'fw-bold text-success';
+        }
+        
+        // Start Polling every 1000ms
+        setInterval(() => {
+            if (!window.appState.isMonitoring) return;
         
         // Fetch Status
         fetch('/api/statistics').then(res => res.json()).then(stats => {
@@ -368,5 +388,6 @@
         });
         
     }, 1000);
+    }); // End nids:sync listener
 </script>
 {% endblock %}

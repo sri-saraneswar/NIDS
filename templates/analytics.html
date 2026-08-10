@@ -152,8 +152,9 @@
         }
     });
 
-    setInterval(() => {
-        if (!window.appState || !window.appState.isMonitoring) return;
+    document.addEventListener('nids:sync', () => {
+        setInterval(() => {
+            if (!window.appState || !window.appState.isMonitoring) return;
         
         fetch('/api/statistics').then(res => res.json()).then(stats => {
             // Update Severity
@@ -191,6 +192,7 @@
                 hostsChart.update();
             }
         });
-    }, 1000);
+        }, 1000);
+    });
 </script>
 {% endblock %}

@@ -64,9 +64,11 @@
         });
         
         // Auto refresh table every 10 seconds to keep history updated
-        setInterval(() => {
-            table.ajax.reload(null, false);
-        }, 10000);
+        document.addEventListener('nids:sync', () => {
+            setInterval(() => {
+                table.ajax.reload(null, false);
+            }, 10000);
+        });
     });
 </script>
 {% endblock %}

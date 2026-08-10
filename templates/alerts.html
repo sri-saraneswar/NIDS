@@ -64,35 +64,38 @@
     // We store alerts to show in modal
     let activeAlertsStore = {};
 
-    setInterval(() => {
-        if (!window.appState || !window.appState.isMonitoring) return;
-        
-        fetch('/api/alerts').then(res => res.json()).then(data => {
-            if(data && Array.isArray(data)) {
-                const table = $('#alertsTable').DataTable();
-                table.clear();
-                activeAlertsStore = {};
-                
-                data.forEach(alert => {
-                    activeAlertsStore[alert.alert_id] = alert;
-                    const time = new Date(alert.start_time * 1000).toLocaleString();
-                    const btn = `<button class="btn btn-sm btn-outline-primary" onclick="viewAlert('${alert.alert_id}')">View</button>`;
+    // Handle synchronization event
+    document.addEventListener('nids:sync', () => {
+        setInterval(() => {
+            if (!window.appState || !window.appState.isMonitoring) return;
+            
+            fetch('/api/alerts').then(res => res.json()).then(data => {
+                if(data && Array.isArray(data)) {
+                    const table = $('#alertsTable').DataTable();
+                    table.clear();
+                    activeAlertsStore = {};
                     
-                    table.row.add([
-                        alert.alert_id.substring(0, 8),
-                        time,
-                        getSeverityBadge(alert.severity),
-                        alert.attack_type,
-                        alert.source_ip,
-                        alert.destination_ip || alert.target_ip,
-                        alert.packet_count,
-                        btn
-                    ]);
-                });
-                table.draw(false);
-            }
-        });
-    }, 1000);
+                    data.forEach(alert => {
+                        activeAlertsStore[alert.alert_id] = alert;
+                        const time = new Date(alert.start_time * 1000).toLocaleString();
+                        const btn = `<button class="btn btn-sm btn-outline-primary" onclick="viewAlert('${alert.alert_id}')">View</button>`;
+                        
+                        table.row.add([
+                            alert.alert_id.substring(0, 8),
+                            time,
+                            getSeverityBadge(alert.severity),
+                            alert.attack_type,
+                            alert.source_ip,
+                            alert.destination_ip || alert.target_ip,
+                            alert.packet_count,
+                            btn
+                        ]);
+                    });
+                    table.draw(false);
+                }
+            });
+        }, 1000);
+    });
 
     window.viewAlert = function(id) {
         const alert = activeAlertsStore[id];

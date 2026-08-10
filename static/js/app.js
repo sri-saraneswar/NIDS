@@ -1,7 +1,41 @@
-// Global State
+// Global State and Synchronization
 window.appState = {
     isMonitoring: false
 };
+
+async function syncBackendState() {
+    try {
+        const response = await fetch('/api/is_monitoring');
+        const data = await response.json();
+        
+        window.appState.isMonitoring = data.is_monitoring === true;
+        
+        if (window.appState.isMonitoring) {
+            // Update global UI indicators
+            const indicator = document.querySelector('.topbar .pulse-indicator');
+            if (indicator) {
+                indicator.style.backgroundColor = 'var(--accent-low)';
+                indicator.style.animation = 'pulse 2s infinite';
+            }
+        } else {
+            // Set global UI for stopped
+            const indicator = document.querySelector('.topbar .pulse-indicator');
+            if (indicator) {
+                indicator.style.backgroundColor = 'var(--accent-critical)';
+                indicator.style.animation = 'none';
+                indicator.style.boxShadow = 'none';
+                
+                const text = document.querySelector('.topbar .text-secondary.small');
+                if (text) text.innerText = 'SYSTEM STOPPED';
+            }
+        }
+        
+        // Dispatch event so pages know state is synchronized
+        document.dispatchEvent(new Event('nids:sync'));
+    } catch (e) {
+        console.error("Failed to sync backend state:", e);
+    }
+}
 
 // Theme Management
 function initTheme() {
@@ -56,4 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(themeToggleBtn) {
         themeToggleBtn.addEventListener('click', toggleTheme);
     }
+    
+    syncBackendState();
 });
