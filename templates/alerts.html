@@ -77,7 +77,7 @@
                     
                     data.forEach(alert => {
                         activeAlertsStore[alert.alert_id] = alert;
-                        const time = new Date(alert.start_time * 1000).toLocaleString();
+                        const time = parseBackendDate(alert.start_time).toLocaleString();
                         const btn = `<button class="btn btn-sm btn-outline-primary" onclick="viewAlert('${alert.alert_id}')">View</button>`;
                         
                         table.row.add([
@@ -101,7 +101,7 @@
         const alert = activeAlertsStore[id];
         if(!alert) return;
         
-        const time = new Date(alert.start_time * 1000).toLocaleString();
+        const time = parseBackendDate(alert.start_time).toLocaleString();
         const html = `
             <ul class="list-group list-group-flush rounded" style="background-color: var(--bg-primary);">
                 <li class="list-group-item bg-transparent text-light border-secondary"><strong>ID:</strong> ${alert.alert_id}</li>

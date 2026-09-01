@@ -9,8 +9,8 @@
             <div class="soc-card-header d-flex justify-content-between align-items-center">
                 <h6 class="soc-card-title m-0">Historical Attack Database</h6>
                 <div>
-                    <button class="btn btn-sm btn-outline-success me-2" onclick="alert('CSV Exporting...')"><i class="fas fa-file-csv"></i> CSV</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="alert('PDF Exporting...')"><i class="fas fa-file-pdf"></i> PDF</button>
+                    <button class="btn btn-sm btn-outline-success me-2" onclick="$('.buttons-csv').click()"><i class="fas fa-file-csv"></i> CSV</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="$('.buttons-pdf').click()"><i class="fas fa-file-pdf"></i> PDF</button>
                 </div>
             </div>
             
@@ -52,14 +52,29 @@
             },
             columns: [
                 { data: 'alert_id', render: data => data ? data.substring(0, 8) : '' },
-                { data: 'start_time', render: data => new Date(data * 1000).toLocaleString() },
+                { data: 'start_time', render: data => parseBackendDate(data).toLocaleString() },
                 { data: 'severity', render: data => getSeverityBadge(data) },
                 { data: 'attack_type' },
                 { data: 'source_ip' },
                 { data: 'destination_ip', defaultContent: '' },
-                { data: null, render: data => Math.max(1, Math.round(data.last_seen - data.start_time)) + 's' },
+                { data: null, render: data => Math.max(1, Math.round((parseBackendDate(data.last_seen) - parseBackendDate(data.start_time)) / 1000)) + 's' },
                 { data: 'packet_count' },
                 { data: null, render: () => '<span class="badge bg-secondary text-light">RESOLVED</span>' }
+            ],
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 text-end"Bf>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            buttons: [
+                {
+                    extend: 'csv',
+                    className: 'd-none',
+                    title: 'NIDS_Attack_History'
+                },
+                {
+                    extend: 'pdf',
+                    className: 'd-none',
+                    title: 'NIDS Attack History',
+                    orientation: 'landscape',
+                    pageSize: 'A4'
+                }
             ]
         });
         

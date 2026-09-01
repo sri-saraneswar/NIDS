@@ -10,8 +10,8 @@
             <h4 class="mb-3">Session Summary</h4>
             <p class="text-secondary mb-4">Complete overview of the current monitoring session including total traffic, general risks, and global statistics.</p>
             <div class="d-flex justify-content-center gap-2">
-                <button class="btn btn-primary" onclick="alert('Generating Session Summary PDF...')"><i class="fas fa-file-pdf me-2"></i> PDF</button>
-                <button class="btn btn-outline-primary" onclick="alert('Generating Session Summary CSV...')"><i class="fas fa-file-csv me-2"></i> CSV</button>
+                <button class="btn btn-primary" onclick="generateReport('session', 'pdf')"><i class="fas fa-file-pdf me-2"></i> PDF</button>
+                <button class="btn btn-outline-primary" onclick="generateReport('session', 'csv')"><i class="fas fa-file-csv me-2"></i> CSV</button>
             </div>
         </div>
     </div>
@@ -22,8 +22,8 @@
             <h4 class="mb-3">Attack Summary</h4>
             <p class="text-secondary mb-4">Detailed breakdown of all detected attacks, targeted hosts, attacker IPs, and threat severities.</p>
             <div class="d-flex justify-content-center gap-2">
-                <button class="btn btn-danger" onclick="alert('Generating Attack Summary PDF...')"><i class="fas fa-file-pdf me-2"></i> PDF</button>
-                <button class="btn btn-outline-danger" onclick="alert('Generating Attack Summary CSV...')"><i class="fas fa-file-csv me-2"></i> CSV</button>
+                <button class="btn btn-danger" onclick="generateReport('attack', 'pdf')"><i class="fas fa-file-pdf me-2"></i> PDF</button>
+                <button class="btn btn-outline-danger" onclick="generateReport('attack', 'csv')"><i class="fas fa-file-csv me-2"></i> CSV</button>
             </div>
         </div>
     </div>
@@ -34,8 +34,8 @@
             <h4 class="mb-3">Protocol Summary</h4>
             <p class="text-secondary mb-4">Analysis of network traffic distribution by protocol (TCP, UDP, ICMP), identifying anomalous protocol spikes.</p>
             <div class="d-flex justify-content-center gap-2">
-                <button class="btn btn-success" onclick="alert('Generating Protocol Summary PDF...')"><i class="fas fa-file-pdf me-2"></i> PDF</button>
-                <button class="btn btn-outline-success" onclick="alert('Generating Protocol Summary CSV...')"><i class="fas fa-file-csv me-2"></i> CSV</button>
+                <button class="btn btn-success" onclick="generateReport('protocol', 'pdf')"><i class="fas fa-file-pdf me-2"></i> PDF</button>
+                <button class="btn btn-outline-success" onclick="generateReport('protocol', 'csv')"><i class="fas fa-file-csv me-2"></i> CSV</button>
             </div>
         </div>
     </div>
@@ -78,4 +78,97 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function generateReport(type, format) {
+        if (format === 'csv') {
+            alert('CSV generation not fully configured, please use the Attack History tab for exporting attack CSVs.');
+            return;
+        }
+
+        const date = new Date().toLocaleString();
+        let content = '';
+
+        if (type === 'session') {
+            const stats = await fetch('/api/statistics').then(res => res.json());
+            content = `
+                <div style="font-family: Arial, sans-serif; color: #333; padding: 40px; background: white;">
+                    <h1 style="color: #0f172a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">NIDS Session Summary Report</h1>
+                    <p><strong>Generated:</strong> ${date}</p>
+                    <h3 style="margin-top: 30px; color: #1e293b;">Global Statistics</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                        <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Total Packets Analyzed:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${stats.packets.toLocaleString()}</td></tr>
+                        <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Total Traffic (Bytes):</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${stats.total_bytes.toLocaleString()}</td></tr>
+                        <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>System Risk Level:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">${stats.risk}</td></tr>
+                        <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Total Alerts Triggered:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${stats.alerts.toLocaleString()}</td></tr>
+                    </table>
+                </div>
+            `;
+        } else if (type === 'attack') {
+            const stats = await fetch('/api/statistics').then(res => res.json());
+            const history = await fetch('/api/history').then(res => res.json());
+            
+            let historyRows = history.slice(0, 20).map(h => `
+                <tr>
+                    <td style="padding: 6px; border-bottom: 1px solid #ddd;">${parseBackendDate(h.start_time).toLocaleString()}</td>
+                    <td style="padding: 6px; border-bottom: 1px solid #ddd;">${h.attack_type}</td>
+                    <td style="padding: 6px; border-bottom: 1px solid #ddd;">${h.severity}</td>
+                    <td style="padding: 6px; border-bottom: 1px solid #ddd;">${h.source_ip}</td>
+                </tr>
+            `).join('');
+
+            content = `
+                <div style="font-family: Arial, sans-serif; color: #333; padding: 40px; background: white;">
+                    <h1 style="color: #0f172a; border-bottom: 2px solid #ef4444; padding-bottom: 10px;">NIDS Attack Summary Report</h1>
+                    <p><strong>Generated:</strong> ${date}</p>
+                    <h3 style="margin-top: 30px; color: #1e293b;">Threat Metrics</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li>Critical Alerts: ${stats.critical}</li>
+                        <li>High Alerts: ${stats.high}</li>
+                        <li>Medium Alerts: ${stats.medium}</li>
+                    </ul>
+                    <h3 style="margin-top: 30px; color: #1e293b;">Recent Threat History</h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 15px;">
+                        <tr style="background-color: #f1f5f9;"><th style="padding: 6px; text-align: left;">Time</th><th style="padding: 6px; text-align: left;">Type</th><th style="padding: 6px; text-align: left;">Severity</th><th style="padding: 6px; text-align: left;">Source</th></tr>
+                        ${historyRows}
+                    </table>
+                </div>
+            `;
+        } else if (type === 'protocol') {
+            const stats = await fetch('/api/statistics').then(res => res.json());
+            let protoRows = Object.entries(stats.protocol_counts || {}).map(([p, c]) => `
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>${p}</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${c.toLocaleString()} pkts</td></tr>
+            `).join('');
+
+            content = `
+                <div style="font-family: Arial, sans-serif; color: #333; padding: 40px; background: white;">
+                    <h1 style="color: #0f172a; border-bottom: 2px solid #10b981; padding-bottom: 10px;">NIDS Protocol Summary Report</h1>
+                    <p><strong>Generated:</strong> ${date}</p>
+                    <h3 style="margin-top: 30px; color: #1e293b;">Protocol Distribution</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                        ${protoRows || '<tr><td>No protocol data available.</td></tr>'}
+                    </table>
+                </div>
+            `;
+        }
+
+        // Create a hidden container for html2pdf to use
+        const container = document.createElement('div');
+        container.innerHTML = content;
+        document.body.appendChild(container);
+        
+        // Use html2pdf
+        html2pdf().from(container).set({
+            margin: 10,
+            filename: `NIDS_${type}_report.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }).save().then(() => {
+            document.body.removeChild(container);
+        });
+    }
+</script>
 {% endblock %}

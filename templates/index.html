@@ -353,7 +353,7 @@
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">No active alerts</td></tr>';
                 } else {
                     recent.forEach(alert => {
-                        const time = new Date(alert.start_time * 1000).toLocaleTimeString();
+                        const time = parseBackendDate(alert.start_time).toLocaleTimeString();
                         tbody.innerHTML += `
                             <tr>
                                 <td>${time}</td>
