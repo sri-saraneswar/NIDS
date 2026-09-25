@@ -88,4 +88,4 @@ SRI SARAN ESWAR S S
 
 ## License
 
-`TODO: Add a LICENSE file (MIT recommended) and reference it here.`
+This project is licensed under the [MIT License](LICENSE).
